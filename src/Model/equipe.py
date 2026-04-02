@@ -17,10 +17,16 @@ class Equipe:
         self.nom = nom
         self.provenance = provenance
         self.liste_athlete: list[Athlete] | None = None,
-        self.coachs: list[Coach] | None = None,
+        self.liste_coachs: list[Coach] | None = None,
 
     def __str__(self) -> str:
-        return f"[{self.id_equipe}, {self.nom}, {self.provenance}, {self.liste_athlete}, {self.coachs}]"
+        return "["
+        f"{self.id_equipe},"
+        f" {self.nom},"
+        f"{self.provenance},"
+        f"{self.liste_athlete},"
+        f"{self.liste_coachs}"
+        "]"
 
     def ajouter_membre(self, membre: Athlete) -> None:
         self.liste_athlete.append(membre)
