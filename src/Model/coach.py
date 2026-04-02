@@ -8,9 +8,9 @@ class Coach(Personne):
         self,
         id_personne: int,
         nom: str,
-        provenance: str, 
-        pseudo: str, 
-        genre: str, 
+        provenance: str,
+        pseudo: str,
+        genre: str,
         role: str,
         date_naissance: datetime,
     ) -> None:
@@ -18,7 +18,8 @@ class Coach(Personne):
             id_personne,
             nom,
             provenance,
-            pseudo, genre,
+            pseudo,
+            genre,
             role,
             date_naissance)
 

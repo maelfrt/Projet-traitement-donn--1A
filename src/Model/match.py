@@ -4,21 +4,21 @@ class Match:
     Parameters
     ----------
     id_match : str
-        clés primaires permetant de différentier les equipes 
+        clés primaires permettant de différentier les équipes 
     date : str
-        date a laquelle le match a lieu
+        date à laquelle le match a lieu
     lieu : str
         lieu ou se tiendra le match
     type_match : str
-        état d'avancement du match dans le tournoi (final, demi-finale, quart-final...)
+        état d'avancement du match dans le tournoi (finale, demi-finale, quart-finale...)
     patch : str
-        version des regles utilisé par la competition
+        version des règles utilisées par la compétition
     surface : str
-        type de materiaux utiliser pour la surface du match(herbe, terrre batue, dur...)
+        type de matériaux utilisés pour la surface du match(herbe, terre battue, dure...)
     performance : str
-        ensemble des données disponible pour le match
+        ensemble des données disponibles pour le match
     vaiqueur : str
-        correspond au vainqeur du match si il y en a un 
+        correspond au vainqueur du match si il y en a un 
     """
     def __init__(
         self,

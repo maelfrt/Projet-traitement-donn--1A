@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 class Personne(ABC):
     """
-    Objet représentant les participants à une compatitions : athlètes et coachs
+    Objet représentant les participants à une compétitions : athlètes et coachs
 
     Parameters :
     id_personne : int
@@ -43,4 +43,4 @@ class Personne(ABC):
     @abstractmethod
     def __str__() -> str:
         ...
-    
+
