@@ -8,6 +8,7 @@ class Competition:
         self,
         id_competition: int,
         nom: str,
-        liste_match: list[Match]
     ) -> None:
-        self.
+        self.id_competition = id_competition
+        self.nom = nom
+        self.liste_match: list[Match] | None = None
