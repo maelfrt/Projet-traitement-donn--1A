@@ -1,10 +1,17 @@
+
+import uuid
+from datetime import datetime
+
+from .performance import Performance
+
+
 class Match:
-    """Définition d'un match entre deux équipes.
+    """Définition d'un match.
 
     Parameters
     ----------
     id_match : str
-        clés primaires permettant de différentier les équipes 
+        clés primaires permettant de différentier les équipes
     date : str
         date à laquelle le match a lieu
     lieu : str
@@ -18,44 +25,63 @@ class Match:
     performance : str
         ensemble des données disponibles pour le match
     vaiqueur : str
-        correspond au vainqueur du match si il y en a un 
+        correspond au vainqueur du match si il y en a un
     """
+
     def __init__(
         self,
-        id_match: str,
-        date: str,
-        lieu: str,    
+        date: datetime,
+        id_match: str | None = None,
+        lieu: str | None = None,
+        type_match: str | None = None,
+        patch: str | None = None,
+        surface: str | None = None,
+        niveau_tournoi: str | None = None,
+        format_sets: str | None = None
     ) -> None:
-        self.id_match = id_match
-        self.lieu = lieu
+        if id_match is None or id_match == "":
+            self.id_match = str(uuid.uuid4())
+        else:
+            self.id_match = id_match
         self.date = date
-        self.type_match: type_match | None = None
-        self.patch: patch | None = None
-        self.surface: surface | None = None
-        self._performance: dict{} = {}
-        self._vainqueur: Equipe | Athlete | None = None
+        self.lieu = lieu
+        self.type_match = type_match
+        self.patch = patch
+        self.surface = surface
+        self.niveau_tournoi = niveau_tournoi
+        self.format_sets = format_sets
+        self.performances: dict[str, Performance] = {}
+
+    def ajouter_performance(self, role: str, performance: Performance) -> None:
+        """Ajoute une performance au match en l'associant à un rôle."""
+        self.performances[role] = performance
+
+    def renvoyer_gagnant(self) -> str:
+        """
+        Détermine le gagnant en lisant directement le booléen 'est_gagnant'
+        des performances, sans avoir à recalculer les scores.
+        """
+        if not self.performances:
+            return "En attente de résultats"
+
+        for role, perf in self.performances.items():
+            if perf.est_gagnant:
+                return f"Vainqueur : {perf.id_participant} ({role})"
+        return "Match nul"
+
+    def to_dict(self) -> dict:
+        """Convertit l'objet en dictionnaire pour Pandas."""
+        return {
+            "id_match": self.id_match,
+            "date_match": self.date,
+            "lieu": self.lieu,
+            "type_match": self.type_match,
+            "patch": self.patch,
+            "surface": self.surface,
+            "nb_participants": len(self.performances),
+            "resultat": self.renvoyer_gagnant()
+        }
 
     def __str__(self) -> str:
-        status = f"Vainqueur : {self._vainqueur.nom}" if self._vainqueur else "En attente"
-        return f"Match : {self.nom_epreuve} ({self.date}) - {self.lieu} | {status}"
-
-    def ajouter_performance(
-        self,
-        performance: Performance,
-    ):
-        self.performance = performance
-
-    def renvoyer_gagnant(
-        self,
-    ) -> Equipe | Athlete:
-        if self.score is not None:
-            if self.score[0] > self.score[1]:
-                return equipe_1 
-            if self.score[1] > self.score[0]:
-                return equipe_2
-            else:
-                return "match nul (comme le psg)"
-        else:
-            if vainqueur is not None:
-                
-
+        info_lieu = f" à {self.lieu}" if self.lieu else ""
+        return f"Match {self.id_match} ({self.date}){info_lieu} | {self.renvoyer_gagnant()}"
