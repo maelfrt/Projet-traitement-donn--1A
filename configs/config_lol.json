@@ -1,0 +1,52 @@
+{
+  "sport": "League of Legends",
+  "fichiers": {
+    "athlete": {
+      "nom_fichier": "lol/player.csv",
+      "mapping": {
+        "id_personne": "pseudo",
+        "nom": "name",
+        "prenom": "pseudo",
+        "date_naissance": "birthdate",
+        "lieu_naissance": "country_of_birth",
+        "equipe_actuelle": "team"
+      }
+    },
+    "match": {
+      "nom_fichier": "lol/match.csv",
+      "mapping_base": {
+        "id_match": "date",
+        "date": "date",
+        "lieu": "patch"
+      },
+      "performances": {
+        "Equipe Bleue": {
+          "colonne_participant": "team_blue",
+          "valeur_victoire": "Blue",
+          "stats": {
+            "kills": "kills_team_blue",
+            "assists": "assists_team_blue",
+            "deaths": "deaths_team_blue",
+            "gold": "gold_team_blue",
+            "turrets": "turrets_team_blue",
+            "dragons": "dragons_team_blue",
+            "barons": "barons_team_blue"
+          }
+        },
+        "Equipe Rouge": {
+          "colonne_participant": "team_red",
+          "valeur_victoire": "Red",
+          "stats": {
+            "kills": "kills_team_red",
+            "assists": "assists_team_red",
+            "deaths": "deaths_team_red",
+            "gold": "gold_team_red",
+            "turrets": "turrets_team_red",
+            "dragons": "dragons_team_red",
+            "barons": "barons_team_red"
+          }
+        }
+      }
+    }
+  }
+}

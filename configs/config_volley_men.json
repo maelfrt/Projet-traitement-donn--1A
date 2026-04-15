@@ -1,0 +1,65 @@
+{
+  "sport": "Volleyball (Hommes)",
+  "fichiers": {
+    "athlete": {
+        "nom_fichier": "volley/player_men.csv",
+        "mapping": {
+            "id_personne": "Unnamed: 0",
+            "nom": "name",
+            "pseudo": "nickname",
+            "provenance": "country_code",
+            "taille": "height",
+            "date_naissance": "birth_date",
+            "lieu_naissance": "birth_place"
+        }
+    },
+    "coach": {
+        "nom_fichier": "volley/coach_men.csv",
+        "mapping": {
+            "id_personne": "Unnamed: 0",
+            "nom": "name",
+            "genre": "gender",
+            "specialite": "function",
+            "date_naissance": "birth_date",
+            "provenance": "country_code"
+        }
+    },
+    "equipe": {
+      "nom_fichier": "volley/country.csv",
+      "mapping": {
+        "code": "id_equipe",
+        "country": "nom"
+      }
+    },
+    "match": {
+      "nom_fichier": "volley/match_men.csv",
+
+      "regle_victoire": {
+        "methode": "comparaison",
+        "stat_cible": "sets_gagnes",
+        "logique": "plus_grand"
+      },
+
+      "mapping_base": {
+          "id_match": "index",
+          "date": "date",
+          "type_match": "stage"
+      },
+
+      "performances": {
+        "Equipe 1": {
+          "colonne_participant": "country_code_1",
+          "stats": {
+            "sets_gagnes": "set_country_1"
+          }
+        },
+        "Equipe 2": {
+          "colonne_participant": "country_code_2",
+          "stats": {
+            "sets_gagnes": "set_country_2"
+          }
+        }
+      }
+    }
+  }
+}
