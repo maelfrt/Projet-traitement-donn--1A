@@ -1,29 +1,66 @@
 {
   "sport": "League of Legends",
+  "type_format": "championnat",
   "fichiers": {
+    "equipe": {
+      "nom_fichier": "lol/team.csv",
+      "mapping": {
+        "id_equipe": "team_abbreviation",
+        "nom": "team",
+        "provenance": "location",
+        "abreviation": "team_abbreviation",
+        "region": "region"
+      }
+    },
     "athlete": {
       "nom_fichier": "lol/player.csv",
       "mapping": {
         "id_personne": "pseudo",
         "nom": "name",
-        "prenom": "pseudo",
+        "provenance": "country_of_birth",
         "date_naissance": "birthdate",
-        "lieu_naissance": "country_of_birth",
+        "role": "role",
+        "equipe_actuelle": "team"
+      }
+    },
+    "coach": {
+      "nom_fichier": "lol/coach.csv",
+      "mapping": {
+        "id_personne": "pseudo",
+        "nom": "name",
+        "provenance": "country_of_birth",
+        "date_naissance": "birthdate",
+        "specialite": "role",
         "equipe_actuelle": "team"
       }
     },
     "match": {
       "nom_fichier": "lol/match.csv",
+      "regle_victoire": {
+        "methode": "directe",
+        "colonne_cible": "winner"
+      },
       "mapping_base": {
         "id_match": "date",
         "date": "date",
-        "lieu": "patch"
+        "lieu": "patch",
+        "semaine": "week",
+        "jour": "day",
+        "match_du_jour": "game_of_day"
       },
       "performances": {
         "Equipe Bleue": {
           "colonne_participant": "team_blue",
           "valeur_victoire": "Blue",
+          "colonnes_joueurs": [
+            "top_team_blue",
+            "jungle_team_blue",
+            "mid_team_blue",
+            "bot_team_blue",
+            "sup_team_blue"
+          ],
           "stats": {
+            "duree_match": "time",
             "kills": "kills_team_blue",
             "assists": "assists_team_blue",
             "deaths": "deaths_team_blue",
@@ -36,7 +73,15 @@
         "Equipe Rouge": {
           "colonne_participant": "team_red",
           "valeur_victoire": "Red",
+          "colonnes_joueurs": [
+            "top_team_red",
+            "jungle_team_red",
+            "mid_team_red",
+            "bot_team_red",
+            "sup_team_red"
+          ],
           "stats": {
+            "duree_match": "time",
             "kills": "kills_team_red",
             "assists": "assists_team_red",
             "deaths": "deaths_team_red",

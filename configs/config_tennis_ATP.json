@@ -1,27 +1,41 @@
 {
   "sport": "Tennis (ATP)",
+  "type_format": "elimination",
+  "cle_groupement": "tourney_name",
+  "poids_rounds": {
+    "F": 1,
+    "SF": 2,
+    "QF": 3,
+    "R16": 4,
+    "R32": 5,
+    "R64": 6,
+    "R128": 7
+  },
   "fichiers": {
     "athlete": {
       "nom_fichier": "tennis/atp_players_2024.csv",
       "mapping": {
         "id_personne": "player_id",
-        "nom": "name_last",         
-        "prenom": "name_first",     
+        "nom": "name_last",
+        "prenom": "name_first",
         "provenance": "ioc",
         "date_naissance": "dob",
-        "taille": "height"
+        "taille": "height",
+        "main_dominante": "hand"
       }
     },
     "match": {
       "nom_fichier": "tennis/atp_matches_2024.csv",
       "mapping_base": {
-          "id_match": "match_num",
-          "date": "tourney_date",
-          "lieu": "tourney_name",
-          "type_match": "round",
-          "surface": "surface",
-          "niveau_tournoi": "tourney_level",
-          "format_sets": "best_of"
+        "id_match": "match_num",
+        "date": "tourney_date",
+        "lieu": "tourney_name",
+        "type_match": "round",
+        "surface": "surface",
+        "niveau_tournoi": "tourney_level",
+        "format_sets": "best_of",
+        "id_tournoi": "tourney_id",
+        "taille_tableau": "draw_size"
       },
       "performances": {
         "Vainqueur": {
@@ -29,16 +43,16 @@
           "victoire_forcee": true,
           "stats": {
             "score": "score",
-            "duree_match": "minutes",
+            "duree_minutes": "minutes",
             "aces": "w_ace",
             "double_fautes": "w_df",
-            "points_service_total": "w_svpt",
+            "points_service": "w_svpt",
             "premiers_services_reussis": "w_1stIn",
-            "points_gagnes_1er_serve": "w_1stWon",
-            "points_gagnes_2eme_serve": "w_2ndWon",
-            "jeux_de_service": "w_SvGms",
-            "balles_de_break_sauvees": "w_bpSaved",
-            "balles_de_break_concedees": "w_bpFaced"
+            "points_gagnes_1er_service": "w_1stWon",
+            "points_gagnes_2eme_service": "w_2ndWon",
+            "jeux_service_tenus": "w_SvGms",
+            "balles_break_sauvees": "w_bpSaved",
+            "balles_break_concedees": "w_bpFaced"
           }
         },
         "Perdant": {
@@ -46,16 +60,16 @@
           "victoire_forcee": false,
           "stats": {
             "score": "score",
-            "duree_match": "minutes",
+            "duree_minutes": "minutes",
             "aces": "l_ace",
             "double_fautes": "l_df",
-            "points_service_total": "l_svpt",
+            "points_service": "l_svpt",
             "premiers_services_reussis": "l_1stIn",
-            "points_gagnes_1er_serve": "l_1stWon",
-            "points_gagnes_2eme_serve": "l_2ndWon",
-            "jeux_de_service": "l_SvGms",
-            "balles_de_break_sauvees": "l_bpSaved",
-            "balles_de_break_concedees": "l_bpFaced"
+            "points_gagnes_1er_service": "l_1stWon",
+            "points_gagnes_2eme_service": "l_2ndWon",
+            "jeux_service_tenus": "l_SvGms",
+            "balles_break_sauvees": "l_bpSaved",
+            "balles_break_concedees": "l_bpFaced"
           }
         }
       }

@@ -1,62 +1,76 @@
 {
-  "sport": "Volleyball (Hommes)",
+  "sport": "Volleyball",
+  "type_format": "elimination",
+  "poids_rounds": {
+    "Gold Medal Match": 1,
+    "Bronze Medal Match": 2,
+    "Semifinals": 3,
+    "Quarterfinals": 4,
+    "Preliminary Round - Pool A": 5,
+    "Preliminary Round - Pool B": 5,
+    "Preliminary Round - Pool C": 5
+  },
   "fichiers": {
     "athlete": {
-        "nom_fichier": "volley/player_men.csv",
-        "mapping": {
-            "id_personne": "Unnamed: 0",
-            "nom": "name",
-            "pseudo": "nickname",
-            "provenance": "country_code",
-            "taille": "height",
-            "date_naissance": "birth_date",
-            "lieu_naissance": "birth_place"
-        }
+      "nom_fichier": "volley/player_men.csv",
+      "mapping": {
+        "id_personne": "Unnamed: 0",
+        "nom": "name",
+        "provenance": "country_code",
+        "equipe_actuelle": "country_code",
+        "taille": "height",
+        "date_naissance": "birth_date",
+        "lieu_naissance": "birth_place",
+        "pseudo": "nickname"
+      }
     },
     "coach": {
-        "nom_fichier": "volley/coach_men.csv",
-        "mapping": {
-            "id_personne": "Unnamed: 0",
-            "nom": "name",
-            "genre": "gender",
-            "specialite": "function",
-            "date_naissance": "birth_date",
-            "provenance": "country_code"
-        }
+      "nom_fichier": "volley/coach_men.csv",
+      "mapping": {
+        "id_personne": "Unnamed: 0",
+        "nom": "name",
+        "date_naissance": "birth_date",
+        "genre": "gender",
+        "specialite": "function",
+        "provenance": "country_code",
+        "equipe_actuelle": "country_code"
+      }
     },
     "equipe": {
       "nom_fichier": "volley/country.csv",
       "mapping": {
-        "code": "id_equipe",
-        "country": "nom"
+        "id_equipe": "code",
+        "nom": "country",
+        "nom_long": "country_long"
       }
     },
     "match": {
       "nom_fichier": "volley/match_men.csv",
-
       "regle_victoire": {
         "methode": "comparaison",
         "stat_cible": "sets_gagnes",
         "logique": "plus_grand"
       },
-
       "mapping_base": {
-          "id_match": "index",
-          "date": "date",
-          "type_match": "stage"
+        "id_match": "index",
+        "date": "date",
+        "type_match": "stage"
       },
-
       "performances": {
         "Equipe 1": {
           "colonne_participant": "country_code_1",
+          "valeur_victoire": "1",
           "stats": {
-            "sets_gagnes": "set_country_1"
+            "sets_gagnes": "set_country_1",
+            "sets_perdus": "set_country_2"
           }
         },
         "Equipe 2": {
           "colonne_participant": "country_code_2",
+          "valeur_victoire": "2",
           "stats": {
-            "sets_gagnes": "set_country_2"
+            "sets_gagnes": "set_country_2",
+            "sets_perdus": "set_country_1"
           }
         }
       }
