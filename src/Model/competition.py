@@ -14,7 +14,7 @@ class Competition:
         id_competition: int,
         nom: str,
         type_format: str = "championnat",
-        poids_rounds: dict[str, int] | None = None
+        poids_rounds: dict[str, int] | None = None,
     ) -> None:
         self.id_competition = id_competition
         self.nom = nom
@@ -41,7 +41,8 @@ class Competition:
             self.sous_competitions[nom_sous_comp] = Competition(
                 id_competition=nouvelle_id,
                 nom=nom_sous_comp,
-                type_format=self.type_format
+                type_format=self.type_format,
+                poids_rounds=self.poids_rounds,
             )
         return self.sous_competitions[nom_sous_comp]
 

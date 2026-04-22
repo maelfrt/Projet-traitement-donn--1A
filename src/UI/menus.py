@@ -17,7 +17,7 @@ def demander_saisie(message: str) -> str:
     Permet de quitter l'application instantanément (Douane).
     """
     choix = input(message).strip()
-    if choix.lower() in ['q', 'quitter', 'exit', 'quit']:
+    if choix.lower() in ["q", "quitter", "exit", "quit"]:
         print("\n🛑 Interruption demandée. Fermeture immédiate de l'application. Au revoir !")
         sys.exit()
     return choix
@@ -100,7 +100,7 @@ def menu_competition(competition: Competition) -> None:
 
         a_des_sous_tournois = len(competition.sous_competitions) > 0
         if a_des_sous_tournois:
-            print("3. Explorer un sous-tournoi (ex: Roland Garros, Poules)")
+            print("3. Explorer un sous-tournoi")
 
         print("0. Retour")
 
@@ -122,7 +122,12 @@ def menu_competition(competition: Competition) -> None:
                 continue
 
             for i, match in enumerate(matchs_a_afficher, 1):
-                date_propre = str(match.date).split()[0].replace("-", "/")
+                if match.date and str(match.date).lower() != "none":
+                    date_propre = str(match.date).split()[0].replace("-", "/")
+                    affichage_date = f"[{date_propre}] "
+                else:
+                    affichage_date = ""
+
                 statut_vainqueur = match.renvoyer_gagnant()
 
                 noms_participants = [perf.participant.nom for perf in match.performances.values()]
@@ -133,10 +138,10 @@ def menu_competition(competition: Competition) -> None:
                     if str(match.id_match) == str(match.date):
                         titre_match = "Affrontement"
 
-                print(f"{i:3d}. [{date_propre}] {titre_match} | 🏆 {statut_vainqueur}")
+                print(f"{i:3d}. {affichage_date}{titre_match} | 🏆 {statut_vainqueur}")
 
-            choix_m = (
-            demander_saisie("\nEntrez le numéro du match pour voir les stats détaillées (ou '0' pour retour) : ")
+            choix_m = demander_saisie(
+                "\nEntrez le numéro du match pour voir les stats détaillées (ou '0' pour retour) : "
             )
             try:
                 idx = int(choix_m)
@@ -200,13 +205,13 @@ def menu_recherche_profil(controller: AppController) -> None:
 
         elif choix_action == "2":
             df_equipes = controller.loader.base_equipes
-            if not df_equipes.empty and 'objet' in df_equipes.columns:
-                resultats_globaux = df_equipes['objet'].tolist()
+            if not df_equipes.empty and "objet" in df_equipes.columns:
+                resultats_globaux = df_equipes["objet"].tolist()
 
         elif choix_action == "3":
             df_athletes = controller.loader.base_athletes
-            if not df_athletes.empty and 'objet' in df_athletes.columns:
-                resultats_globaux = df_athletes['objet'].tolist()
+            if not df_athletes.empty and "objet" in df_athletes.columns:
+                resultats_globaux = df_athletes["objet"].tolist()
 
         else:
             print("Choix invalide.")

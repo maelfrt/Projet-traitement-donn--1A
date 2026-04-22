@@ -106,15 +106,26 @@ class DataLoader:
             df_matchs["objet"] = df_matchs.apply(self._instancier_match, axis=1, args=(config_match,))
 
         self.base_matchs = df_matchs
+
         cle_groupement = config_match.get("cle_groupement")
 
-        for _, ligne in df_matchs.iterrows():
-            instance_match = ligne["objet"]
+        for ligne in df_matchs.itertuples(index=False):
+            # Avec itertuples, 'ligne' n'est plus un dictionnaire mais un objet avec des attributs.
+            instance_match = getattr(ligne, "objet", None)
+
             if instance_match is None:
                 continue
 
-            if cle_groupement and pd.notna(ligne.get(cle_groupement)):
-                nom_sous_comp = str(ligne.get(cle_groupement))
+            if cle_groupement:
+                valeur_grp = getattr(ligne, cle_groupement, None)
+
+                if pd.isna(valeur_grp) or str(valeur_grp).strip().lower() in ["", "nan", "none"]:
+                    nom_sous_comp = "Tableau Principal"
+                else:
+                    nom_sous_comp = str(valeur_grp).strip().removesuffix(".0")
+                    if "section" in cle_groupement.lower():
+                        nom_sous_comp = f"Section {nom_sous_comp}"
+
                 sous_competition = competition_parente.obtenir_ou_creer_sous_comp(nom_sous_comp)
                 sous_competition.ajouter_match(instance_match)
             else:
@@ -163,20 +174,43 @@ class DataLoader:
 
         if methode_evaluation == "comparaison":
             stat_cible = regle_victoire["stat_cible"]
-            score_actuel = int(stats.get(stat_cible, 0))
 
-            role_adversaire = None
+            # On récupère la liste des mots déclenchant une victoire automatique
+            mots_victoire = regle_victoire.get("victoire_par_defaut", [])
+            # On s'assure que tout est en minuscules pour la comparaison
+            mots_victoire = [str(mot).strip().lower() for mot in mots_victoire]
 
-            for r in config_match_globale["performances"]:
-                if r != role:
-                    role_adversaire = r
-                    break
+            score_brut_actuel = str(stats.get(stat_cible, "0")).strip().lower()
 
-            stats_adversaire = self._extraire_champs(
-                ligne_csv, config_match_globale["performances"][role_adversaire]["stats"]
-            )
-            score_adversaire = int(stats_adversaire.get(stat_cible, 0))
+            if score_brut_actuel in mots_victoire:
+                return True
 
+            # Sécurité anti-crash pour le joueur actuel
+            try:
+                score_actuel = float(score_brut_actuel)
+            except ValueError:
+                score_actuel = 0.0
+
+            role_adversaire = next((r for r in config_match_globale["performances"] if r != role), None)
+
+            # Récupération du score de l'adversaire
+            score_adversaire = 0.0
+            if role_adversaire:
+                stats_adversaire = self._extraire_champs(
+                    ligne_csv, config_match_globale["performances"][role_adversaire]["stats"]
+                )
+                score_brut_adv = str(stats_adversaire.get(stat_cible, "0")).strip().lower()
+
+                # Si par hasard c'est l'adversaire qui a bénéficié de la victoire par défaut
+                if score_brut_adv in mots_victoire:
+                    return False
+
+                try:
+                    score_adversaire = float(score_brut_adv)
+                except ValueError:
+                    score_adversaire = 0.0
+
+            # Détermination du gagnant aux points
             if regle_victoire.get("logique") == "plus_grand":
                 return score_actuel > score_adversaire
             return score_actuel < score_adversaire

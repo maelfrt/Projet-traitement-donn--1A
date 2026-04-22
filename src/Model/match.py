@@ -30,7 +30,7 @@ class Match:
 
     def __init__(
         self,
-        date: datetime,
+        date: datetime | str | None = None,
         id_match: str | None = None,
         lieu: str | None = None,
         type_match: str | None = None,
@@ -38,11 +38,17 @@ class Match:
         surface: str | None = None,
         niveau_tournoi: str | None = None,
         format_sets: str | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self.id_match = str(id_match) if id_match else "ID_A_DEFINIR"
 
-        self.date = date
+        self.date: datetime | str | None = date
+
+        date_str = str(date).strip()
+        if len(date_str) == 8 and date_str.isdigit():
+            # On reformate proprement la date avec des tirets (YYYY-MM-DD)
+            self.date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+
         self.lieu = lieu
         self.type_match = type_match
         self.patch = patch
@@ -85,7 +91,7 @@ class Match:
             "type_match": self.type_match,
             "surface": self.surface,
             "nb_participants": len(self.performances),
-            "resultat_final": self.renvoyer_gagnant()
+            "resultat_final": self.renvoyer_gagnant(),
         }
 
     def __str__(self) -> str:
