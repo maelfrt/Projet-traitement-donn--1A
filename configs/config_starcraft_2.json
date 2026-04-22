@@ -1,0 +1,58 @@
+{
+    "sport": "Starcraft 2",
+    "type_format": "elimination",
+    "cle_groupement": "group",
+    "poids_rounds": {
+        "RO2": 1,
+        "RO4": 2,
+        "RO8": 3,
+        "RO16": 4,
+        "RO32": 5
+    },
+    "fichiers": {
+        "athlete": {
+            "nom_fichier": "starcraft_2/player.csv",
+            "mapping": {
+                "id_personne": "pseudo",
+                "nom": "name",
+                "pseudo": "pseudo",
+                "provenance": "nationality",
+                "date_naissance": "birthdate",
+                "role": "race",
+                "equipe_actuelle": "team"
+            }
+        },
+        "match": {
+            "nom_fichier": "starcraft_2/match.csv",
+            "regle_victoire": {
+                "methode": "comparaison",
+                "stat_cible": "score",
+                "logique": "plus_grand",
+                "victoire_par_defaut": [
+                    "forfait",
+                    "w.o.",
+                    "abandon"
+                ]
+            },
+            "mapping_base": {
+                "date": "date",
+                "type_match": "round",
+                "format_sets": "best_of"
+            },
+            "performances": {
+                "Joueur 1": {
+                    "colonne_participant": "player_1",
+                    "stats": {
+                        "score": "score_player_1"
+                    }
+                },
+                "Joueur 2": {
+                    "colonne_participant": "player_2",
+                    "stats": {
+                        "score": "score_player_2"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,54 @@
+{
+    "sport": "Badminton",
+    "type_format": "elimination",
+    "cle_groupement": "tournament",
+    "poids_rounds": {
+        "Final": 1,
+        "Semi final": 2,
+        "Quarter final": 3,
+        "Round of 16": 4,
+        "Round of 32": 5,
+        "Qualification final": 6,
+        "Qualification semi final": 7,
+        "Qualification quarter final": 8
+    },
+    "fichiers": {
+        "athlete": {
+            "nom_fichier": "badminton/player.csv",
+            "mapping": {
+                "id_personne": "name",
+                "nom": "name",
+                "provenance": "country",
+                "continent": "continent"
+            }
+        },
+        "match": {
+            "nom_fichier": "badminton/match.csv",
+            "regle_victoire": {
+                "methode": "directe",
+                "colonne_cible": "winner"
+            },
+            "mapping_base": {
+                "date": "date",
+                "type_match": "round",
+                "lieu": "city",
+                "pays": "country",
+                "categorie": "tournament_type"
+            },
+            "performances": {
+                "Joueur 1": {
+                    "colonne_participant": "player_1",
+                    "stats": {
+                        "set_1": "game_1_score",
+                        "set_2": "game_2_score",
+                        "set_3": "game_3_score"
+                    }
+                },
+                "Joueur 2": {
+                    "colonne_participant": "player_2",
+                    "stats": {}
+                }
+            }
+        }
+    }
+}

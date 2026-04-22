@@ -1,0 +1,57 @@
+{
+    "sport": "Échecs",
+    "type_format": "championnat",
+    "cle_groupement": "section",
+    "fichiers": {
+        "athlete": {
+            "nom_fichier": "chess/player.csv",
+            "mapping": {
+                "id_personne": "name",
+                "nom": "name",
+                "provenance": "federation",
+                "genre": "gender",
+                "date_naissance": "birth_year",
+                "fide_id": "fide_id",
+                "titre": "fide_title",
+                "elo_standard": "rating_standard",
+                "elo_rapid": "rating_rapid",
+                "elo_blitz": "rating_blitz"
+            }
+        },
+        "match": {
+            "nom_fichier": "chess/match.csv",
+            "regle_victoire": {
+                "methode": "comparaison",
+                "stat_cible": "score",
+                "logique": "plus_grand",
+                "victoire_par_defaut": [
+                    "bye",
+                    "forfait",
+                    "w.o.",
+                    "abandon"
+                ]
+            },
+            "mapping_base": {
+                "id_match": "match",
+                "type_match": "round",
+                "section": "section"
+            },
+            "performances": {
+                "Joueur 1": {
+                    "colonne_participant": "player_1",
+                    "stats": {
+                        "score": "score_player_1",
+                        "seed": "seed_player_1"
+                    }
+                },
+                "Joueur 2": {
+                    "colonne_participant": "player_2",
+                    "stats": {
+                        "score": "score_player_2",
+                        "seed": "seed_player_2"
+                    }
+                }
+            }
+        }
+    }
+}
