@@ -3,25 +3,35 @@ name = "projet-traitement-donnees"
 description = "Application de gestion de résultats sportifs (Jeux Olympique 2024)"
 version = "2026.2.0"
 requires-python = ">=3.13.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+authors = [
+    {name = "Kilian Crumbach"},
+    {name = "Ryan Alves"},
+    {name = "Mael Fretté"},
+    {name = "Raphaëlle Belaygues"},
+]
+
+# Dépendances nécessaires pour faire tourner l'application
 dependencies = [
     "pandas",
     "pandas-stubs",
     "matplotlib",
+]
+
+# Dépendances pour les développeurs (tests, linters, etc.)
+[project.optional-dependencies]
+dev = [
     "pytest",
     "pytest-cov",
     "mypy",
     "ruff",
-    "black"
-]
-authors = [
-  {name = "Kilian Crumbach"},
-  {name = "Ryan Alves"},
-  {name = "Mael Fretté"},
-  {name = "Raphaëlle Belaygues"},
+    "black",
 ]
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py313"
 line-length = 120
 
 [tool.ruff.lint]
@@ -32,7 +42,13 @@ extend-select = ["E", "F", "W", "I"]
 line-length = 120
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.13"
 mypy_path = "src"
 explicit_package_bases = true
+strict = false
 exclude = ["venv", ".git", "__pycache__", ".mypy_cache", "test_", "conftest.py"]
+
+# Pour que Mypy ignore les imports manquants de matplotlib
+[[tool.mypy.overrides]]
+module = "matplotlib.*"
+ignore_missing_imports = true

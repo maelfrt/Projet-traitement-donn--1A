@@ -1,126 +1,100 @@
 import json
 import sys
-from pathlib import Path
 
-from src.Parsers.manager import Manager
-
-
-def afficher_en_tete() -> None:
-    """Affiche le titre de l'application."""
-    print("=" * 50)
-    print("APPLICATION DE TRAITEMENT DE DONNEES SPORTIVES")
-    print("=" * 50)
-
-
-def choisir_role() -> str:
-    """Demande à l'utilisateur de s'identifier."""
-    print("\n[ IDENTIFICATION ]")
-    print("1. Administrateur")
-    print("2. Utilisateur (Consultation)")
-
-    choix = ""
-    while choix not in ["1", "2"]:
-        choix = input("Choisissez votre profil (1 ou 2) : ")
-        if choix not in ["1", "2"]:
-            print("Erreur : Veuillez entrer 1 ou 2.")
-
-    if choix == "1":
-        return "admin"
-    return "user"
-
-
-def obtenir_sports_disponibles(dossier_configs: str = "configs") -> dict[int, dict[str, str]]:
-    """
-    Scanne le dossier des configurations pour lister les sports disponibles.
-    Retourne un dictionnaire du type : { 1: {"nom": "Tennis (ATP)", "fichier": "config_tennis.json"} }
-    """
-    chemin_configs = Path(dossier_configs)
-    sports_dispo: dict[int, dict[str, str]] = {}
-
-    if not chemin_configs.exists():
-        print(f"[ERREUR] Le dossier '{dossier_configs}' est introuvable.")
-        return sports_dispo
-
-    index = 1
-    for fichier in chemin_configs.glob("*.json"):
-        try:
-            with open(fichier, "r", encoding="utf-8") as f:
-                config = json.load(f)
-                nom_sport = config.get("sport")
-
-                if nom_sport:
-                    sports_dispo[index] = {
-                        "nom": nom_sport,
-                        "fichier": fichier.name
-                    }
-                    index += 1
-        except Exception:
-            # Si un fichier JSON est mal formaté, on l'ignore simplement
-            pass
-
-    return sports_dispo
-
-
-def choisir_sport(sports_dispo: dict[int, dict[str, str]]) -> str:
-    """Affiche la liste des sports et demande à l'utilisateur d'en choisir un."""
-    if not sports_dispo:
-        print("\nAucun sport n'est configuré pour le moment.")
-        sys.exit()
-
-    print("\n[ SPORTS DISPONIBLES ]")
-    for numero, donnees in sports_dispo.items():
-        print(f"{numero}. {donnees['nom']}")
-
-    print("0. Quitter l'application")
-
-    choix_num = -1
-    while choix_num not in sports_dispo and choix_num != 0:
-        try:
-            saisie = input(f"Sélectionnez un sport (0 à {len(sports_dispo)}) : ")
-            choix_num = int(saisie)
-
-            if choix_num == 0:
-                print("Fermeture de l'application. À bientôt !")
-                sys.exit()
-
-            if choix_num not in sports_dispo:
-                print("Erreur : Ce numéro ne correspond à aucun sport.")
-
-        except ValueError:
-            print("Erreur : Veuillez entrer un nombre valide.")
-
-    return sports_dispo[choix_num]["fichier"]
+from src.Analysis.statistiques import calculer_statistiques_globales
+from src.Core.app_controller import AppController
+from src.UI.affichage import (
+    afficher_en_tete,
+    afficher_statistiques_globales,
+)
+from src.UI.graphiques import (
+    generer_camembert_provenance,
+    generer_graphique_winrates,
+)
+from src.UI.menus import (
+    afficher_menu_principal,
+    lister_configurations_disponibles,
+    menu_competition,
+    menu_recherche_profil,
+    selectionner_role,
+    selectionner_sport,
+)
 
 
 def main() -> None:
     """Point d'entrée principal de l'application."""
     afficher_en_tete()
 
-    # Identification
-    role = choisir_role()
-    print(f"-> Connecté en tant que : {role.upper()}")
+    selectionner_role()
+    controller = AppController()
+    configs = lister_configurations_disponibles()
 
-    # Récupération  des sports
-    sports_dispo = obtenir_sports_disponibles()
-    fichier_json_choisi = choisir_sport(sports_dispo)
+    # Boucle de Niveau 0 : Choix du sport
+    while True:
+        config_choisie = selectionner_sport(configs)
 
-    # Lancement du Manager avec le sport choisi
-    print("\n" + "-" * 50)
-    mon_manager = Manager()
-    competition = mon_manager.charger_sport(fichier_json_choisi)
-    print("-" * 50)
+        if not config_choisie:
+            print("\nArrêt du programme. Fin de session.")
+            sys.exit()
 
-    total = len(mon_manager.athletes_globaux)
-    print("--- RÉSUMÉ ---")
-    print(f"Nombre total d'athlètes en mémoire : {total}")
-    mon_manager.afficher_resultats(competition)
+        try:
+            print("\nTraitement des données en cours...")
+            controller.executer_chargement_complet(config_choisie)
+            competition = controller.obtenir_resultats()
 
-    # TODO : Afficher les menus spécifiques selon le rôle (Admin ou User)
-    print("\n[ MENU PRINCIPAL ]")
-    print(f"La compétition '{competition}' est chargée en mémoire.")
-    print("La suite du menu arrive bientôt...")
+            if not competition:
+                print("Erreur : Impossible de charger les résultats.")
+                continue
+
+            # Boucle de Niveau 1 : Le Menu interactif du sport
+            while True:
+                choix_menu = afficher_menu_principal()
+
+                if choix_menu == "1":
+                    menu_recherche_profil(controller)
+
+                elif choix_menu == "2":
+                    menu_competition(competition)
+
+                elif choix_menu == "3":
+                    liste_athletes = []
+                    df_athletes = controller.loader.base_athletes
+
+                    if not df_athletes.empty and 'objet' in df_athletes.columns:
+                        liste_athletes = df_athletes['objet'].tolist()
+
+                    print("\nAnalyse des données en cours...")
+                    resultats_stats = calculer_statistiques_globales(competition, liste_athletes)
+                    afficher_statistiques_globales(resultats_stats)
+
+                elif choix_menu == "4":
+                    print("\nPréparation des visualisations...")
+                    liste_athletes = controller.loader.base_athletes['objet'].tolist()
+                    resultats_stats = calculer_statistiques_globales(competition, liste_athletes)
+
+                    generer_camembert_provenance(resultats_stats)
+                    generer_graphique_winrates(resultats_stats)
+
+                elif choix_menu == "9":
+                    print("\nRetour à la sélection des sports...")
+                    break
+
+                elif choix_menu == "0":
+                    print("\nFermeture des modules. Fin du programme.")
+                    sys.exit()
+
+                else:
+                    print("Choix invalide. Veuillez réessayer.")
+
+        except FileNotFoundError as e:
+            print(f"\nErreur critique : Un fichier de données est manquant. {e}")
+        except json.JSONDecodeError:
+            print("\nErreur critique : Le fichier de configuration JSON est mal formé.")
+        except KeyError as e:
+            print(f"\nErreur technique : Une colonne attendue est manquante dans le CSV ou le JSON. Clé : {e}")
+        except RuntimeError as e:
+            print(f"\nUne erreur est survenue lors de l'exécution du traitement : {e}")
 
 
-# Cette condition vérifie que le script est lancé directement (et non importé)
 if __name__ == "__main__":
     main()
