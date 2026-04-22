@@ -1,13 +1,15 @@
-import uuid
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from datetime import datetime
+from typing import Any
+
+from .participant import Participant
 
 
-class Personne(ABC):
+class Personne(Participant):
     """
-    Objet représentant les participants à une compétition : athlètes et coachs.
-
-    Parameters :
+    Objet représentant les participants humains à une compétition (athlètes et coachs).
+    Hérite de Participant pour la gestion de l'ID et du Nom.
+        Parameters :
     id_personne : int
         identifiant unique de la personne
     nom : str
@@ -35,24 +37,20 @@ class Personne(ABC):
         role: str | None = None,
         date_naissance: datetime | None = None,
         lieu_naissance: str | None = None,
+        **kwargs: Any
     ) -> None:
-        if id_personne is None or id_personne == "":
-            self.id_personne = str(uuid.uuid4())
-        else:
-            self.id_personne = id_personne
+        nom_complet = f"{prenom} {nom}" if prenom else nom
 
-        if prenom:
-            self.nom = f"{prenom} {nom}"
-        else:
-            self.nom = nom
+        super().__init__(nom=nom_complet, id_participant=id_personne, **kwargs)
 
+        self.prenom = prenom
         self.provenance = provenance
         self.pseudo = pseudo
         self.genre = genre
+        self.role = role
         self.date_naissance = date_naissance
         self.lieu_naissance = lieu_naissance
-        self.role = role
 
     @abstractmethod
     def __str__(self) -> str:
-        ...
+        """Méthode abstraite à implémenter dans Athlete et Coach."""

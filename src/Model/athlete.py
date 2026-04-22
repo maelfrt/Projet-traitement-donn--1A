@@ -1,16 +1,15 @@
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
+
+import pandas as pd
 
 from .personne import Personne
 
 
 class Athlete(Personne):
     """
-    Objet représentant un athlète, héritant de Personne.
-
-    Attributs supplémentaires :
-    taille : float | None (en cm)
-    poids : float | None (en kg)
-    equipe: str | None
+    Objet représentant un athlète complet.
+    Hérite de Personne (et donc de Participant) pour la gestion de l'identité.
     """
 
     def __init__(
@@ -26,28 +25,45 @@ class Athlete(Personne):
         lieu_naissance: str | None = None,
         equipe_actuelle: str | None = None,
         taille: float | None = None,
-        poids: float | None = None
+        poids: float | None = None,
+        **kwargs: Any
     ) -> None:
         super().__init__(
-            nom,
-            prenom,
-            id_personne,
-            provenance,
-            pseudo,
-            genre,
-            role,
-            date_naissance,
-            lieu_naissance
+            nom=nom,
+            prenom=prenom,
+            id_personne=id_personne,
+            provenance=provenance,
+            pseudo=pseudo,
+            genre=genre,
+            role=role,
+            date_naissance=date_naissance,
+            lieu_naissance=lieu_naissance,
+            **kwargs
         )
-        self.taille = taille
-        self.poids = poids
+        self.taille = taille  # en cm
+        self.poids = poids    # en kg
         self.equipe_actuelle = equipe_actuelle
 
     def age(self) -> int | None:
         """Calcule l'âge de l'athlète à partir de sa date de naissance."""
-        if self.date_naissance:
-            return (datetime.now() - self.date_naissance).days // 365
-        return None
+        if not self.date_naissance or str(self.date_naissance).lower() in ["nan", "none", ""]:
+            return None
+
+        try:
+            # Nettoyage et conversion
+            date_str = str(self.date_naissance).strip().removesuffix(".0")
+            date_obj = pd.to_datetime(date_str)
+
+            aujourdhui = datetime.now(UTC).date()
+
+            naissance = date_obj.date()
+
+            # Calcul de l'âge (ajuste si l'anniversaire n'est pas encore passé cette année)
+            return aujourdhui.year - naissance.year - (
+                (aujourdhui.month, aujourdhui.day) < (naissance.month, naissance.day)
+            )
+        except (ValueError, TypeError, AttributeError):
+            return None
 
     def calculer_imc(self) -> float | None:
         """Calcule l'Indice de Masse Corporelle (IMC)."""
@@ -57,10 +73,13 @@ class Athlete(Personne):
         return None
 
     def to_dict(self) -> dict:
-        """Convertit l'objet en dictionnaire pour Pandas."""
+        """
+        Convertit l'objet en dictionnaire pour Pandas.
+        On utilise self.id (hérité de Participant) pour la cohérence.
+        """
         return {
-            "id_personne": self.id_personne,
-            "nom": self.nom,
+            "id_participant": self.id,
+            "nom_complet": self.nom,
             "provenance": self.provenance,
             "pseudo": self.pseudo,
             "genre": self.genre,
@@ -68,9 +87,10 @@ class Athlete(Personne):
             "date_naissance": self.date_naissance,
             "taille": self.taille,
             "poids": self.poids,
-            "imc": self.calculer_imc()
+            "imc": self.calculer_imc(),
+            "equipe_actuelle": self.equipe_actuelle
         }
 
     def __str__(self) -> str:
         info_provenance = f" ({self.provenance})" if self.provenance else ""
-        return f"Athlète : {self.nom}{info_provenance} - ID: {self.id_personne}"
+        return f"Athlète : {self.nom}{info_provenance} - ID: {self.id}"

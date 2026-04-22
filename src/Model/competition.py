@@ -1,34 +1,52 @@
+from __future__ import annotations
+
 from .match import Match
 
 
 class Competition:
     """
-    Objet représentant un tournoi ou une ligue,
-    agrégeant les différents matchs d'un sport.
+    Objet représentant un tournoi ou une ligue.
+    Peut contenir soit une liste de Matchs, soit des sous-compétitions.
     """
 
     def __init__(
         self,
         id_competition: int,
         nom: str,
-        liste_match: list[Match] | None = None
+        type_format: str = "championnat",
+        poids_rounds: dict[str, int] | None = None
     ) -> None:
         self.id_competition = id_competition
         self.nom = nom
-        self.liste_match = liste_match if liste_match is not None else []
+        self.type_format = type_format
+        self.poids_rounds: dict[str, int] = poids_rounds if poids_rounds else {}
+
+        self.liste_match: list[Match] = []
+        self.sous_competitions: dict[str, Competition] = {}
+        self.classement_final: list[dict] = []
+
+    def set_classement(self, classement: list) -> None:
+        """Enregistre le classement calculé."""
+        self.classement_final = classement
 
     def ajouter_match(self, match: Match) -> None:
-        """Ajoute un match à la compétition s'il n'y est pas déjà."""
-        if match not in self.liste_match:
-            self.liste_match.append(match)
+        """Ajoute un match à la liste."""
+        self.liste_match.append(match)
 
-    def to_dict(self) -> dict:
-        """Convertit l'objet en dictionnaire pour Pandas."""
-        return {
-            "id_competition": self.id_competition,
-            "nom": self.nom,
-            "nb_matchs": len(self.liste_match)
-        }
+    def obtenir_ou_creer_sous_comp(self, nom_sous_comp: str) -> Competition:
+        """Gère l'imbrication des tournois (ex: Roland Garros dans ATP)."""
+        if nom_sous_comp not in self.sous_competitions:
+            # On crée une sous-comp avec un ID dérivé
+            nouvelle_id = hash(nom_sous_comp) % 10000
+            self.sous_competitions[nom_sous_comp] = Competition(
+                id_competition=nouvelle_id,
+                nom=nom_sous_comp,
+                type_format=self.type_format
+            )
+        return self.sous_competitions[nom_sous_comp]
 
     def __str__(self) -> str:
-        return f"Compétition : {self.nom} - {len(self.liste_match)} match (ID: {self.id_competition})"
+        nb_m = len(self.liste_match)
+        nb_s = len(self.sous_competitions)
+        detail = f"{nb_m} matchs" if nb_m > 0 else f"{nb_s} sous-tournois"
+        return f"Compétition : {self.nom} ({detail})"

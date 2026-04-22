@@ -1,12 +1,12 @@
-
-import uuid
 from datetime import datetime
+from typing import Any
 
 from .performance import Performance
 
 
 class Match:
-    """Définition d'un match.
+    """
+    Définition d'un match regroupant les performances des participants.
 
     Parameters
     ----------
@@ -37,12 +37,11 @@ class Match:
         patch: str | None = None,
         surface: str | None = None,
         niveau_tournoi: str | None = None,
-        format_sets: str | None = None
+        format_sets: str | None = None,
+        **kwargs: Any
     ) -> None:
-        if id_match is None or id_match == "":
-            self.id_match = str(uuid.uuid4())
-        else:
-            self.id_match = id_match
+        self.id_match = str(id_match) if id_match else "ID_A_DEFINIR"
+
         self.date = date
         self.lieu = lieu
         self.type_match = type_match
@@ -50,38 +49,45 @@ class Match:
         self.surface = surface
         self.niveau_tournoi = niveau_tournoi
         self.format_sets = format_sets
+        self.infos_supplementaires: dict[str, Any] = kwargs
+
+        # Dictionnaire stockant les objets Performance par rôle (ex: "Vainqueur", "Equipe 1")
         self.performances: dict[str, Performance] = {}
 
     def ajouter_performance(self, role: str, performance: Performance) -> None:
-        """Ajoute une performance au match en l'associant à un rôle."""
+        """Ajoute une performance connectée au match."""
         self.performances[role] = performance
 
     def renvoyer_gagnant(self) -> str:
         """
-        Détermine le gagnant en lisant directement le booléen 'est_gagnant'
-        des performances, sans avoir à recalculer les scores.
+        Détermine le gagnant en utilisant l'objet Participant stocké dans la performance.
+        Retourne le nom réel du vainqueur.
         """
         if not self.performances:
             return "En attente de résultats"
 
         for role, perf in self.performances.items():
             if perf.est_gagnant:
-                return f"Vainqueur : {perf.id_participant} ({role})"
+                # On accède directement au nom de l'objet (Athlete ou Equipe)
+                return f"{perf.participant.nom} ({role})"
+
         return "Match nul"
 
-    def to_dict(self) -> dict:
-        """Convertit l'objet en dictionnaire pour Pandas."""
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convertit le match en dictionnaire pour Pandas.
+        Inclut le nom du gagnant pour éviter les recherches ultérieures.
+        """
         return {
             "id_match": self.id_match,
             "date_match": self.date,
             "lieu": self.lieu,
             "type_match": self.type_match,
-            "patch": self.patch,
             "surface": self.surface,
             "nb_participants": len(self.performances),
-            "resultat": self.renvoyer_gagnant()
+            "resultat_final": self.renvoyer_gagnant()
         }
 
     def __str__(self) -> str:
         info_lieu = f" à {self.lieu}" if self.lieu else ""
-        return f"Match {self.id_match} ({self.date}){info_lieu} | {self.renvoyer_gagnant()}"
+        return f"Match {self.id_match} ({self.date}){info_lieu} | Vainqueur : {self.renvoyer_gagnant()}"

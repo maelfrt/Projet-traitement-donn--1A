@@ -1,24 +1,26 @@
+from typing import Any
+
 from .athlete import Athlete
 from .coach import Coach
+from .participant import Participant
 
 
-class Equipe:
+class Equipe(Participant):
     """
     Objet représentant les équipes participantes à la compétition.
+    Hérite de Participant pour la gestion de l'ID et du Nom.
     """
     def __init__(
         self,
-        id_equipe: int,
         nom: str,
+        id_equipe: str | None = None,
         provenance: str | None = None,
-        liste_athlete: list[Athlete] | None = None,
-        coachs: list[Coach] | None = None,
+        **kwargs: Any
     ) -> None:
-        self.id_equipe = id_equipe
-        self.nom = nom
+        super().__init__(nom=nom, id_participant=id_equipe, **kwargs)
         self.provenance = provenance
-        self.liste_athlete = liste_athlete if liste_athlete is not None else []
-        self.coachs = coachs if coachs is not None else []
+        self.liste_athlete: list[Athlete] = []
+        self.coachs: list[Coach] = []
 
     def ajouter_membre(self, membre: Athlete) -> None:
         """Ajoute un athlète à l'équipe s'il n'y est pas déjà."""
@@ -37,9 +39,10 @@ class Equipe:
     def to_dict(self) -> dict:
         """
         Convertit l'équipe en dictionnaire pour Pandas.
+        On met à jour les clés pour correspondre au nouveau Participant.
         """
         return {
-            "id_equipe": self.id_equipe,
+            "id_participant": self.id,
             "nom": self.nom,
             "provenance": self.provenance,
             "nb_athletes": len(self.liste_athlete),
@@ -49,4 +52,4 @@ class Equipe:
 
     def __str__(self) -> str:
         prov = f" ({self.provenance})" if self.provenance else ""
-        return f"Équipe : {self.nom}{prov} - {len(self.liste_athlete)} athlète(s) - ID: {self.id_equipe}"
+        return f"Équipe : {self.nom}{prov} - {len(self.liste_athlete)} athlète(s) - ID: {self.id}"
