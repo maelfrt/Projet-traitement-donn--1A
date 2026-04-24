@@ -40,5 +40,5 @@ class GestionnaireCSV:
     def sauvegarder_fichier(self, df: pd.DataFrame, nom_fichier: str) -> None:
         """Sauvegarde un DataFrame mis à jour dans un fichier CSV pour l'admin."""
         chemin_complet = self.dossier_source / nom_fichier
-        df.to_csv(chemin_complet, index=False)
+        df.to_csv(str(chemin_complet), index=False)
         print(f"Fichier sauvegardé : {nom_fichier}")

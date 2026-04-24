@@ -2,11 +2,15 @@ from typing import Any
 
 from src.Model.athlete import Athlete
 from src.Model.competition import Competition
+from src.Model.equipe import Equipe
 
 
 def calculer_statistiques_globales(competition: Competition, liste_entites: list) -> dict:
     """Analyse la compétition et les participants pour générer des records globaux."""
     stats: dict[str, Any] = {}
+
+    stats["total_athletes"] = sum(1 for e in liste_entites if isinstance(e, Athlete))
+    stats["total_equipes"] = sum(1 for e in liste_entites if isinstance(e, Equipe))
 
     # Extraction de tous les matchs
     def extraire_matchs(comp: Competition) -> list:
@@ -51,7 +55,7 @@ def calculer_statistiques_globales(competition: Competition, liste_entites: list
             stats["meilleur_winrate"] = {
                 "nom": meilleur_wr["nom"],
                 "winrate": (meilleur_wr["victoires"] / meilleur_wr["joues"]) * 100,
-                "joues": meilleur_wr["joues"]
+                "joues": meilleur_wr["joues"],
             }
     # Analyse Démographique et Géographique (Provenance)
     repartition_provenance: dict[str, Any] = {}
@@ -59,7 +63,7 @@ def calculer_statistiques_globales(competition: Competition, liste_entites: list
 
     # Compter les représentants par provenance
     for entite in liste_entites:
-        prov = getattr(entite, 'provenance', None)
+        prov = getattr(entite, "provenance", None)
         if prov and str(prov).strip().lower() not in ["nan", "none", "", "aucun", "inconnu"]:
             repartition_provenance[prov] = repartition_provenance.get(prov, 0) + 1
 
@@ -72,14 +76,14 @@ def calculer_statistiques_globales(competition: Competition, liste_entites: list
     for match in tous_les_matchs:
         for perf in match.performances.values():
             participant = perf.participant
-            prov = getattr(participant, 'provenance', None)
+            prov = getattr(participant, "provenance", None)
 
             provenance_invalide = not prov or str(prov).lower() in ["nan", "none", "", "aucun", "inconnu"]
 
-            possede_joueurs = hasattr(participant, 'liste_athlete') and participant.liste_athlete
+            possede_joueurs = hasattr(participant, "liste_athlete") and participant.liste_athlete
 
             if provenance_invalide and possede_joueurs:
-                prov = getattr(participant.liste_athlete[0], 'provenance', None)
+                prov = getattr(participant.liste_athlete[0], "provenance", None)
 
             if prov and str(prov).strip().lower() not in ["nan", "none", "", "aucun", "inconnu"]:
                 if prov not in bilan_provenance:
@@ -99,7 +103,7 @@ def calculer_statistiques_globales(competition: Competition, liste_entites: list
                 "pays": meilleure_prov[0],
                 "winrate": (meilleure_prov[1]["victoires"] / meilleure_prov[1]["joues"]) * 100,
                 "joues": meilleure_prov[1]["joues"],
-                "seuil": MIN_MATCHS
+                "seuil": MIN_MATCHS,
             }
 
     return stats
