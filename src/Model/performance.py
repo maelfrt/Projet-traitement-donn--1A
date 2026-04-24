@@ -10,16 +10,13 @@ class Performance:
     """
 
     def __init__(
-        self,
-        participant: Participant,
-        role: str,
-        est_gagnant: bool = False,
-        stats: dict[str, Any] | None = None
+        self, participant: Participant, role: str, est_gagnant: bool = False, stats: dict[str, Any] | None = None
     ) -> None:
         self.participant: Participant = participant
         self.role: str = role
         self.est_gagnant: bool = est_gagnant
         self.stats: dict[str, Any] = stats if stats is not None else {}
+        self.joueurs_match: list = []
 
     def ajouter_stat(self, cle: str, valeur: Any) -> None:
         """Ajoute ou met à jour une statistique spécifique."""
@@ -34,7 +31,7 @@ class Performance:
             "id_participant": self.participant.id,
             "nom_participant": self.participant.nom,
             "role": self.role,
-            "est_gagnant": self.est_gagnant
+            "est_gagnant": self.est_gagnant,
         }
         base_dict.update(self.stats)
         return base_dict

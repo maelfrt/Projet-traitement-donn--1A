@@ -81,18 +81,33 @@ class Match:
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Convertit le match en dictionnaire pour Pandas.
-        Inclut le nom du gagnant pour éviter les recherches ultérieures.
+        Convertit le match en dictionnaire plat pour Pandas.
+        Aplatit les performances pour inclure participants et statistiques.
         """
-        return {
+        data: dict[str, Any] = {
             "id_match": self.id_match,
-            "date_match": self.date,
+            "date": self.date,
             "lieu": self.lieu,
             "type_match": self.type_match,
             "surface": self.surface,
-            "nb_participants": len(self.performances),
             "resultat_final": self.renvoyer_gagnant(),
         }
+
+        for role, perf in self.performances.items():
+            # On crée des colonnes préfixées par le rôle (ex: Domicile_nom, Domicile_buts)
+            prefix = str(role).replace(" ", "_").lower()
+
+            data[f"{prefix}_nom"] = perf.participant.nom
+            data[f"{prefix}_id"] = perf.participant.id
+            data[f"{prefix}_est_gagnant"] = perf.est_gagnant
+
+            for stat_nom, stat_valeur in perf.stats.items():
+                data[f"{prefix}_{stat_nom}"] = stat_valeur
+
+        if hasattr(self, "infos_supplementaires"):
+            data.update(self.infos_supplementaires)
+
+        return data
 
     def __str__(self) -> str:
         info_lieu = f" à {self.lieu}" if self.lieu else ""
