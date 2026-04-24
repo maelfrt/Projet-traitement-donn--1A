@@ -1,0 +1,67 @@
+{
+    "sport": "Football Champions League",
+    "type_format": "elimination",
+    "cle_groupement": "group",
+    "poids_rounds": {
+        "RO2": 1,
+        "RO4": 2,
+        "RO8": 3,
+        "RO16": 4,
+        "RO32": 5
+    },
+    "fichiers": {
+        "athlete": {
+            "nom_fichier": "football_champions_league/player.csv",
+            "mapping": {
+                "id_personne": "player_name",
+                "nom": "player_name",
+                "role": "position",
+                "equipe_actuelle": "club",
+                "buts": "goals",
+                "passes_decisives": "assists",
+                "matchs_joues": "match_played",
+                "minutes_jouees": "minutes_played",
+                "jaunes": "yellow",
+                "rouges": "red",
+                "distance_km": "distance_covered"
+            }
+        },
+        "equipe": {
+            "nom_fichier": "football_champions_league/team.csv",
+            "mapping": {
+                "id_equipe": "short_name",
+                "nom": "full_name",
+                "abreviation": "short_name",
+                "provenance": "country",
+                "ville": "city"
+            }
+        },
+        "match": {
+            "nom_fichier": "football_champions_league/match.csv",
+            "regle_victoire": {
+                "methode": "comparaison",
+                "stat_cible": "buts",
+                "logique": "plus_grand"
+            },
+            "mapping_base": {
+                "date": "date",
+                "type_match": "round",
+                "phase_competition": "phase"
+            },
+            "performances": {
+                "Domicile": {
+                    "colonne_participant": "team_home",
+                    "stats": {
+                        "buts": "score_team_home"
+                    }
+                },
+                "Extérieur": {
+                    "colonne_participant": "team_away",
+                    "stats": {
+                        "buts": "score_team_away"
+                    }
+                }
+            }
+        }
+    }
+}

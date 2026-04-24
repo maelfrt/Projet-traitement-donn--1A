@@ -1,0 +1,97 @@
+{
+    "sport": "Football (Ligues Européennes)",
+    "type_format": "championnat",
+    "cle_groupement": "league_name",
+    "fichiers": {
+        "athlete": {
+            "nom_fichier": "football/player.csv",
+            "mapping": {
+                "id_personne": "player_api_id",
+                "nom": "player_name",
+                "date_naissance": "birthday",
+                "taille": "height (cm)",
+                "poids": "weight (kg)"
+            }
+        },
+        "equipe": {
+            "nom_fichier": "football/team.csv",
+            "mapping": {
+                "id_equipe": "team_api_id",
+                "nom": "team_long_name",
+                "abreviation": "team_short_name"
+            }
+        },
+        "match": {
+            "nom_fichier": "football/match.csv",
+            "jointures": [
+                {
+                    "fichier": "football/league.csv",
+                    "cle_source": "league_id",
+                    "cle_cible": "id",
+                    "renommer": {
+                        "name": "league_name"
+                    }
+                },
+                {
+                    "fichier": "football/country.csv",
+                    "cle_source": "country_id_x",
+                    "cle_cible": "id",
+                    "renommer": {
+                        "name": "country_name"
+                    }
+                }
+            ],
+            "regle_victoire": {
+                "methode": "comparaison",
+                "stat_cible": "buts",
+                "logique": "plus_grand"
+            },
+            "mapping_base": {
+                "id_match": "match_api_id",
+                "date": "date",
+                "type_match": "season",
+                "lieu": "country_name"
+            },
+            "performances": {
+                "Domicile": {
+                    "colonne_participant": "home_team_api_id",
+                    "colonnes_joueurs": [
+                        "home_player_1",
+                        "home_player_2",
+                        "home_player_3",
+                        "home_player_4",
+                        "home_player_5",
+                        "home_player_6",
+                        "home_player_7",
+                        "home_player_8",
+                        "home_player_9",
+                        "home_player_10",
+                        "home_player_11"
+                    ],
+                    "stats": {
+                        "buts": "home_team_goal"
+                    }
+                },
+                "Extérieur": {
+                    "colonne_participant": "away_team_api_id",
+                    "colonnes_joueurs": [
+                        "away_player_1",
+                        "away_player_2",
+                        "away_player_3",
+                        "away_player_4",
+                        "away_player_5",
+                        "away_player_6",
+                        "away_player_7",
+                        "away_player_8",
+                        "away_player_9",
+                        "away_player_10",
+                        "away_player_11"
+                    ],
+                    "stats": {
+                        "buts": "away_team_goal"
+                    }
+                }
+            }
+        }
+    }
+}

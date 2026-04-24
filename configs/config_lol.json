@@ -17,6 +17,7 @@
       "mapping": {
         "id_personne": "pseudo",
         "nom": "name",
+        "pseudo": "pseudo",
         "provenance": "country_of_birth",
         "date_naissance": "birthdate",
         "role": "role",
@@ -41,7 +42,6 @@
         "colonne_cible": "winner"
       },
       "mapping_base": {
-        "id_match": "date",
         "date": "date",
         "lieu": "patch",
         "semaine": "week",

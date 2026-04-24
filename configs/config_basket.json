@@ -1,0 +1,77 @@
+{
+    "sport": "Basketball",
+    "type_format": "championnat",
+    "cle_groupement": "season_type",
+    "fichiers": {
+        "athlete": {
+            "nom_fichier": "basket/player.csv",
+            "mapping": {
+                "id_personne": "person_id",
+                "nom": "last_name",
+                "prenom": "first_name",
+                "date_naissance": "birthdate",
+                "taille": "height",
+                "poids": "weight",
+                "role": "position",
+                "equipe_actuelle": "team_id",
+                "numero_maillot": "jersey"
+            }
+        },
+        "equipe": {
+            "nom_fichier": "basket/team.csv",
+            "mapping": {
+                "id_equipe": "id",
+                "nom": "full_name",
+                "abreviation": "abbreviation",
+                "pseudo": "nickname",
+                "ville": "city",
+                "provenance": "state"
+            }
+        },
+        "match": {
+            "nom_fichier": "basket/game.csv",
+            "regle_victoire": {
+                "methode": "comparaison",
+                "stat_cible": "points",
+                "logique": "plus_grand"
+            },
+            "mapping_base": {
+                "id_match": "game_id",
+                "date": "game_date",
+                "type_match": "season_type",
+                "saison": "season",
+                "duree_minutes": "min"
+            },
+            "performances": {
+                "Domicile": {
+                    "colonne_participant": "team_id_home",
+                    "stats": {
+                        "points": "pts_home",
+                        "rebonds": "reb_home",
+                        "passes": "ast_home",
+                        "interceptions": "stl_home",
+                        "contres": "blk_home",
+                        "pertes_de_balle": "tov_home",
+                        "fautes": "pf_home",
+                        "tirs_3pts_reussis": "fg3m_home",
+                        "pourcentage_tirs": "fg_pct_home"
+                    }
+                },
+                "Extérieur": {
+                    "colonne_participant": "team_id_away",
+                    "stats": {
+                        "points": "pts_away",
+                        "rebonds": "reb_away",
+                        "passes": "ast_away",
+                        "interceptions": "stl_away",
+                        "contres": "blk_away",
+                        "pertes_de_balle": "tov_away",
+                        "fautes": "pf_away",
+                        "tirs_3pts_reussis": "fg3m_away",
+                        "pourcentage_tirs": "fg_pct_away"
+                    }
+                }
+            }
+        }
+    }
+}

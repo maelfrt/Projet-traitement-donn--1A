@@ -46,7 +46,11 @@
                 },
                 "Joueur 2": {
                     "colonne_participant": "player_2",
-                    "stats": {}
+                    "stats": {
+                        "set_1": "game_1_score",
+                        "set_2": "game_2_score",
+                        "set_3": "game_3_score"
+                    }
                 }
             }
         }
