@@ -38,8 +38,47 @@ def afficher_resultats_competition(competition: Competition, niveau: int = 0) ->
 def afficher_details_match(match: Match) -> None:
     """Affiche le rapport détaillé d'un match avec les stats de chaque participant."""
     print("\n" + "=" * 60)
-    print(f"   RAPPORT DE MATCH : {match.id_match}")
-    print(f"   Date : {match.date} | Lieu : {match.lieu or 'N/A'}")
+
+    noms_participants = [perf.participant.nom for perf in match.performances.values()]
+    if len(noms_participants) == 2:
+        titre = f"{noms_participants[0]} vs {noms_participants[1]}"
+    elif len(noms_participants) > 2:
+        titre = f"Match multi-participants ({len(noms_participants)} inscrits)"
+    else:
+        titre = "Détails de la rencontre"
+
+    print(f"   RAPPORT DE MATCH : {titre}")
+
+    date_propre = (
+        str(match.date).split()[0].replace("-", "/") if match.date and str(match.date).lower() != "none" else "N/A"
+    )
+    print(f"   Date : {date_propre} | Lieu : {match.lieu or 'N/A'}")
+
+    infos_extras = []
+
+    attributs_natifs = {
+        "type_match": "Phase/Tour",
+        "niveau_tournoi": "Niveau",
+        "surface": "Surface",
+        "format_sets": "Format",
+        "patch": "Patch",
+    }
+    for attr, label in attributs_natifs.items():
+        valeur = getattr(match, attr, None)
+        if valeur is not None and str(valeur).strip().lower() not in ["nan", "none", ""]:
+            infos_extras.append(f"{label} : {valeur}")
+
+    if hasattr(match, "infos_supplementaires"):
+        for cle, valeur in match.infos_supplementaires.items():
+            if valeur is not None and str(valeur).strip().lower() not in ["nan", "none", ""]:
+                cle_formatee = cle.replace("_", " ").capitalize()
+                infos_extras.append(f"{cle_formatee} : {valeur}")
+
+    if infos_extras:
+        print("-" * 30)
+        for info in infos_extras:
+            print(f"   - {info}")
+
     print("=" * 60)
 
     if not match.performances:
@@ -151,6 +190,62 @@ def afficher_profil(entite, competition: Competition | None) -> None:
             role_str = f" ({joueur.role})" if est_valide(joueur.role) else ""
             print(f" - {joueur.nom}{role_str}")
 
+    # ==============================
+    # PALMARÈS & TITRES
+    # ==============================
+    if competition:
+
+        def _recuperer_trophees(entite_cible, comp: Competition) -> list[str]:
+            trophees_trouves = []
+
+            # Si le tournoi a un classement calculé
+            if comp.classement_final and len(comp.classement_final) > 0:
+                premier = comp.classement_final[0]
+                nom_premier = str(premier.get("nom", "")).strip()
+
+                # Le participant a-t-il gagné ? (Lui-même, ou son équipe)
+                nom_gagnant = nom_premier.lower()
+
+                noms_valides = [str(entite_cible.nom).lower().strip()]
+
+                equipe = getattr(entite_cible, "equipe_actuelle", None)
+                if equipe:
+                    noms_valides.append(str(equipe).lower().strip())
+
+                a_gagne = nom_gagnant in noms_valides
+
+                # S'il est premier, on personnalise l'affichage selon le nom du bloc
+                if a_gagne:
+                    nom_actuel = comp.nom.upper()
+                    nom_global = competition.nom.upper()
+
+                    # Si c'est le tournoi principal
+                    if nom_actuel == "TABLEAU PRINCIPAL" or nom_actuel == nom_global:
+                        trophees_trouves.append(f"🏆 Vainqueur : {nom_global}")
+
+                    # Si c'est une phase de poule ou un groupe
+                    elif str(comp.type_format).lower() == "championnat":
+                        victoires = premier.get("victoires", 0)
+                        trophees_trouves.append(f"🥇 1er de groupe/section : {nom_actuel} ({victoires}V)")
+
+                    # Pour les autres sous-tournois à élimination
+                    else:
+                        trophees_trouves.append(f"🥇 1er de phase : {nom_actuel}")
+
+            # Recherche récursive dans les sous-tournois (Poules, Stages...)
+            for sous_comp in comp.sous_competitions.values():
+                trophees_trouves.extend(_recuperer_trophees(entite_cible, sous_comp))
+
+            return trophees_trouves
+
+        # Exécution de la recherche
+        liste_trophees = _recuperer_trophees(entite, competition)
+
+        if liste_trophees:
+            print("\n-- Palmarès & Titres --")
+            for trophee in liste_trophees:
+                print(f" {trophee}")
+
     # BILAN DES MATCHS
     print("\n" + "-" * 55)
     print("   BILAN & HISTORIQUE DES MATCHS")
@@ -167,11 +262,17 @@ def afficher_profil(entite, competition: Competition | None) -> None:
             for role, perf in match.performances.items():
                 match_valide = str(perf.participant.id) == str(entite.id)
 
-                if not match_valide and isinstance(entite, Athlete) and hasattr(perf.participant, "liste_athlete"):
-                    for joueur_equipe in perf.participant.liste_athlete:
-                        if str(joueur_equipe.id) == str(entite.id):
-                            match_valide = True
-                            break
+                if not match_valide and isinstance(entite, Athlete):
+                    if hasattr(perf, "joueurs_match") and perf.joueurs_match:
+                        for joueur in perf.joueurs_match:
+                            if str(joueur.id) == str(entite.id):
+                                match_valide = True
+                                break
+                    elif hasattr(perf.participant, "liste_athlete"):
+                        for joueur_equipe in perf.participant.liste_athlete:
+                            if str(joueur_equipe.id) == str(entite.id):
+                                match_valide = True
+                                break
 
                 if match_valide:
                     historique.append((match, role, perf))
@@ -188,28 +289,37 @@ def afficher_profil(entite, competition: Competition | None) -> None:
             print(f"Défaites     : {total_matchs - victoires:2d}")
             print(f"Winrate      : {winrate:.1f} %\n")
 
-            print("Historique récent (Ligne par match) :")
-            for match, role, perf in historique:
-                statut = "🏆 V" if perf.est_gagnant else "❌ D"
-                date_propre = str(match.date).split()[0].replace("-", "/")
+            historique.sort(key=lambda item: str(item[0].date), reverse=True)
 
-                resume_parts = []
-                for cle, valeur in perf.stats.items():
-                    if est_valide(valeur):
-                        cle_formatee = cle.replace("_", " ").capitalize()
-                        if isinstance(valeur, float):
-                            valeur = f"{valeur:.1f}"
-                        resume_parts.append(f"{cle_formatee}: {valeur}")
-                    if len(resume_parts) >= 2:
+            print("Historique récent (Saisissez un numéro pour voir les détails) :")
+            matchs_visibles = historique[:15]
+
+            for i, (match, role, perf) in enumerate(matchs_visibles, 1):
+                statut = "🏆 V" if perf.est_gagnant else "❌ D"
+
+                if match.date and str(match.date).strip().lower() not in ["nan", "none", ""]:
+                    date_propre = f"{str(match.date).split()[0].replace('-', '/')} - "
+                else:
+                    date_propre = ""
+
+                nom_adversaire = "Adversaire inconnu"
+                for p in match.performances.values():
+                    if str(p.participant.id) != str(entite.id):
+                        nom_adversaire = p.participant.nom
                         break
 
-                resume_stat = " - ".join(resume_parts)
-                detail = f" | {resume_stat}" if resume_stat else ""
+                print(f"{i:2d}. {statut} | {date_propre}vs {nom_adversaire}")
 
-                print(f" {statut} | {date_propre} - Match {match.id_match}{detail}")
+            print("\n" + "=" * 55)
+            choix = input("Numéro du match pour détails (ou Entrée pour quitter) : ").strip()
 
-    print("\n" + "=" * 55)
-    input("Appuyez sur Entrée pour continuer...")
+            try:
+                idx = int(choix)
+                if 1 <= idx <= len(matchs_visibles):
+                    afficher_details_match(matchs_visibles[idx - 1][0])
+                    afficher_profil(entite, competition)
+            except ValueError:
+                pass
 
 
 def afficher_statistiques_globales(stats: dict) -> None:
@@ -219,6 +329,11 @@ def afficher_statistiques_globales(stats: dict) -> None:
     print("=" * 55)
 
     print(f"Total des matchs enregistrés : {stats.get('total_matchs', 0)}")
+
+    if stats.get("total_equipes", 0) > 0:
+        print(f"Total des équipes inscrites  : {stats['total_equipes']}")
+    if stats.get("total_athletes", 0) > 0:
+        print(f"Total des joueurs inscrits   : {stats['total_athletes']}")
 
     print("\n--- 🏆 RECORDS DE PERFORMANCE ---")
     if "meilleur_winrate" in stats:
@@ -255,3 +370,72 @@ def afficher_statistiques_globales(stats: dict) -> None:
 
     print("\n" + "=" * 55)
     input("Appuyez sur Entrée pour retourner au menu...")
+
+
+def afficher_a_propos() -> None:
+    """Affiche la page de présentation, les aides et l'architecture des fichiers."""
+    import pydoc
+
+    texte_a_propos = """
+        ============================================================
+                        À propos / Fonctionnalités
+        ============================================================
+        Description : Système avancé de gestion de compétitions
+        ------------------------------------------------------------
+
+        PRÉSENTATION
+        Cette application a été conçue et développée en Python dans
+        le cadre d'un projet de groupe. L'objectif était de créer un
+        système complet et robuste de gestion de compétitions sportivee
+        en appliquant les meilleures pratiques de programmation.
+
+        ARCHITECTURE ET ADAPTABILITÉ
+        Le système repose sur une architecture générique, pensée
+        pour gérer de multiples jeux de données sans avoir à
+        réécrire le cœur de l'application pour chaque nouveau sport.
+
+        Cette flexibilité repose sur les fichiers de configuration JSON
+        (dans le dossier "config"). Ces fichiers agissent comme des
+        traducteurs : ils expliquent au programme comment "mapper" les
+        colonnes d'un fichier CSV inconnu vers nos objets Python standards.
+
+        CE QUE VOUS POUVEZ FAIRE
+        - Naviguer    : Changez de sport à tout moment depuis le menu.
+        - Rechercher  : Trouvez instantanément le profil complet
+                        d'un athlète ou d'une équipe.
+        - Consulter   : Lisez les classements d'une compétition,
+                        que ça soit un championnat ou un tournoi à
+                        élimination.
+        - Administrer : Ajoutez de nouveaux matchs, inscrivez des
+                        joueurs ou corrigez des erreurs passées.
+
+        CONSEILS D'UTILISATION
+        - Navigation : Tapez simplement le numéro correspondant
+                        à votre choix et appuyez sur Entrée.
+        - Annulation : Dans presque tous les menus, tapez "0"
+                        pour faire un retour en arrière.
+                        Vous pouvez aussi appuyer sur "q" (ou "Q")
+                        pour quitter l'application à tout moment.
+        - Recherche  : Vous n'avez pas besoin de taper le nom
+                        complet d'un joueur, une partie suffit !
+
+        ARCHITECTURE ET FICHIERS DE DONNÉES
+        Vos données sont stockées localement sur votre disque dur
+        dans le dossier "donnees".
+
+        Chaque sport possède son propre sous-dossier (ex: /football)
+        contenant les fichiers de données (au format CSV) :
+        - match.csv  : L'historique officiel de toutes les rencontres.
+        - player.csv : La base de données des athlètes.
+        - team.csv   : La base de données des équipes engagées.
+
+        NOTE POUR L'ADMIN :
+        Vos ajouts et modifications en mémoire ne seront inscrits
+        définitivement dans ces fichiers CSV que si vous utilisez
+        l'option "Sauvegarder" avant de quitter l'application !
+
+        ============================================================
+        """
+    pydoc.pager(texte_a_propos)
+
+    input(" Appuyez sur Entrée pour retourner au menu principal...")
