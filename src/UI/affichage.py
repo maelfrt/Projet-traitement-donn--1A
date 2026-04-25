@@ -97,17 +97,6 @@ def afficher_details_match(match: Match) -> None:
                     valeur_str = f"{valeur:.1f}" if isinstance(valeur, float) else str(valeur)
                     print(f"   - {cle_nom:25} : {valeur_str}")
 
-    print("\n" + "=" * 60)
-    input("Appuyez sur Entrée pour revenir à la liste...")
-
-
-def _recuperer_tous_les_matchs(competition: Competition) -> list:
-    """Parcourt l'arborescence complète pour récupérer une liste plate de tous les matchs."""
-    matchs = list(competition.liste_match)
-    for sous_comp in competition.sous_competitions.values():
-        matchs.extend(_recuperer_tous_les_matchs(sous_comp))
-    return matchs
-
 
 def afficher_profil(entite, competition: Competition | None) -> None:
     """Affiche un tableau de bord exhaustif et dynamique d'une Équipe ou d'un Joueur."""
@@ -254,7 +243,7 @@ def afficher_profil(entite, competition: Competition | None) -> None:
     if not competition:
         print("Aucune compétition chargée.")
     else:
-        tous_les_matchs = _recuperer_tous_les_matchs(competition)
+        tous_les_matchs = competition.obtenir_tous_les_matchs()
         historique = []
         victoires = 0
 
@@ -291,7 +280,7 @@ def afficher_profil(entite, competition: Competition | None) -> None:
 
             historique.sort(key=lambda item: str(item[0].date), reverse=True)
 
-            print("Historique récent (Saisissez un numéro pour voir les détails) :")
+            print("Historique récent :")
             matchs_visibles = historique[:15]
 
             for i, (match, role, perf) in enumerate(matchs_visibles, 1):
@@ -309,17 +298,6 @@ def afficher_profil(entite, competition: Competition | None) -> None:
                         break
 
                 print(f"{i:2d}. {statut} | {date_propre}vs {nom_adversaire}")
-
-            print("\n" + "=" * 55)
-            choix = input("Numéro du match pour détails (ou Entrée pour quitter) : ").strip()
-
-            try:
-                idx = int(choix)
-                if 1 <= idx <= len(matchs_visibles):
-                    afficher_details_match(matchs_visibles[idx - 1][0])
-                    afficher_profil(entite, competition)
-            except ValueError:
-                pass
 
 
 def afficher_statistiques_globales(stats: dict) -> None:
@@ -367,9 +345,6 @@ def afficher_statistiques_globales(stats: dict) -> None:
         print(f"  -> {mwp['winrate']:.0f}% de victoires (sur {mwp['joues']} matchs cumulés)")
     else:
         print("\nNation la plus dominante : Pas assez de données valides pour calculer cette statistique.")
-
-    print("\n" + "=" * 55)
-    input("Appuyez sur Entrée pour retourner au menu...")
 
 
 def afficher_a_propos() -> None:
@@ -437,5 +412,3 @@ def afficher_a_propos() -> None:
         ============================================================
         """
     pydoc.pager(texte_a_propos)
-
-    input(" Appuyez sur Entrée pour retourner au menu principal...")

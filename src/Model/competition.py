@@ -46,6 +46,16 @@ class Competition:
             )
         return self.sous_competitions[nom_sous_comp]
 
+    def obtenir_tous_les_matchs(self) -> list[Match]:
+        """
+        Parcourt l'arborescence pour renvoyer une liste de tous les matchs
+        du tournoi principal et de ses sous-tournois.
+        """
+        matchs = list(self.liste_match)
+        for sous_comp in self.sous_competitions.values():
+            matchs.extend(sous_comp.obtenir_tous_les_matchs())
+        return matchs
+
     def __str__(self) -> str:
         nb_m = len(self.liste_match)
         nb_s = len(self.sous_competitions)

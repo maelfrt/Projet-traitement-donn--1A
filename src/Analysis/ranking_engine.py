@@ -12,7 +12,6 @@ class RankingEngine:
         """Point d'entrée principal. Détecte le format et lance le bon calcul à tous les niveaux."""
 
         # On fait le calcul aux sous-tournois
-        # Ainsi, Brisbane, Roland Garros, etc., auront tous leur classement calculé
         for sous_comp in competition.sous_competitions.values():
             self.generer_classement(sous_comp)
 
@@ -89,11 +88,32 @@ class RankingEngine:
 
         liste_bilan = list(bilan_participants.values())
 
-        liste_triee = sorted(liste_bilan, key=lambda x: (float(x["poids_atteint"]), -int(x["victoires_totales"])))
+        def critere_de_tri(joueur: dict) -> tuple[float, int]:
+            """
+            Définit comment Python doit trier les joueurs.
+            Le poids le plus petit en premier (ex: 0.0 pour le vainqueur de la finale).
+            En cas d'égalité, on regarde le nombre de victoires.
+            """
+            poids = float(joueur["poids_atteint"])
+            victoires_inversees = -int(joueur["victoires_totales"])
+            return (poids, victoires_inversees)
+
+        liste_triee = sorted(liste_bilan, key=critere_de_tri)
 
         return liste_triee
 
     def _departager_finalistes(self, nom_du_tour: str, est_gagnant: bool, poids_de_base: int) -> float:
+        """
+        Attribue un score numérique (poids) pour forcer le tri du classement.
+        Le plus petit score sera le 1er du classement.
+
+        Par exemple,
+        - 1er  (Vainqueur Grande Finale) : Score 0.0
+        - 2ème (Perdant Grande Finale)   : Score 1.0
+        - 3ème (Vainqueur Petite Finale) : Score 2.0
+        - 4ème (Perdant Petite Finale)   : Score 3.0
+        - Autres tours (ex: Quart de finale) : Score de base + 0.9 (ex: 4.9)
+        """
         texte_tour = nom_du_tour.lower()
 
         est_grande_finale = ("gold" in texte_tour) or (
@@ -106,4 +126,6 @@ class RankingEngine:
         if est_petite_finale:
             return 2.0 if est_gagnant else 3.0
 
+        # Pour un tour normal (ex: RO16, Quarter Final), les perdants sont éliminés à ce stade.
+        # On leur donne le poids du tour + 0.9 pour les classer juste après les qualifiés.
         return float(poids_de_base) + 0.9

@@ -16,14 +16,14 @@ from src.Model.performance import Performance
 class DataLoader:
     """
     Service chargé de l'ingestion des données CSV, de l'application des configurations JSON,
-    et de l'instanciation du graphe d'objets métier.
+    et de l'instanciation du graphe d'objets métier. (Version Haute Performance)
     """
 
     def __init__(self, dossier_donnees: str = "donnees", dossier_configs: str = "configs") -> None:
         self.dossier_configs = Path(dossier_configs)
         self.gestionnaire_csv = GestionnaireCSV(dossier_donnees)
 
-        # DataFrames de stockage temporaire
+        # DataFrames de stockage
         self.base_athletes = pd.DataFrame()
         self.base_equipes = pd.DataFrame()
         self.base_coaches = pd.DataFrame()
@@ -34,8 +34,6 @@ class DataLoader:
     # =========================================================
     def initialiser_competition(self, nom_fichier_json: str) -> Competition:
         """Point d'entrée : Lit la configuration et orchestre le chargement des données."""
-
-        # Vide le cache des anciennes compétitions
         self.base_athletes = pd.DataFrame()
         self.base_equipes = pd.DataFrame()
         self.base_coaches = pd.DataFrame()
@@ -45,7 +43,6 @@ class DataLoader:
         with open(chemin_json, "r", encoding="utf-8") as fichier:
             config_sport = json.load(fichier)
 
-        # Chargement des entités de base
         if "athlete" in config_sport["fichiers"]:
             self._charger_entites(config_sport["fichiers"]["athlete"], Athlete, "base_athletes")
 
@@ -55,7 +52,6 @@ class DataLoader:
         if "equipe" in config_sport["fichiers"]:
             self._charger_entites(config_sport["fichiers"]["equipe"], Equipe, "base_equipes")
 
-        # Instanciation de l'objet principal Competition
         competition_principale = Competition(
             id_competition=len(config_sport["sport"]),
             nom=config_sport["sport"],
@@ -63,37 +59,30 @@ class DataLoader:
             poids_rounds=config_sport.get("poids_rounds"),
         )
 
-        # On construit le dictionnaire avant de lire les matchs
+        # Création de l'annuaire O(1) AVANT les matchs
         self._construire_annuaire()
 
-        # Chargement et intégration des matchs
+        # Lien rapide Athlètes -> Équipes
+        self._lier_athletes_aux_equipes()
+
         if "match" in config_sport["fichiers"]:
             config_match = config_sport["fichiers"]["match"]
-
-            # Si la clé de groupement est placée à la racine du JSON, on la transfère aux paramètres du match
             if "cle_groupement" in config_sport and "cle_groupement" not in config_match:
                 config_match["cle_groupement"] = config_sport["cle_groupement"]
 
             self._charger_matchs(config_match, competition_principale)
 
-            self._lier_athletes_aux_equipes()
-
         return competition_principale
 
     def _charger_donnees_brutes(self, config_fichier: dict) -> pd.DataFrame:
-        """Charge un CSV principal et effectue les jointures (Merge Pandas) si spécifiées dans le JSON."""
+        """Charge un CSV principal et effectue les jointures si spécifiées."""
         df_principal = self.gestionnaire_csv.charger_fichier(config_fichier["nom_fichier"])
 
-        # Si le JSON demande des jointures
         if "jointures" in config_fichier:
             for jointure in config_fichier["jointures"]:
                 df_joint = self.gestionnaire_csv.charger_fichier(jointure["fichier"])
-
-                # On renomme les colonnes du CSV joint pour éviter les conflits (ex: 'name' en 'league_name')
                 if "renommer" in jointure:
                     df_joint = df_joint.rename(columns=jointure["renommer"])
-
-                # On fusionne les deux tableaux (Left Join)
                 df_principal = pd.merge(
                     df_principal, df_joint, how="left", left_on=jointure["cle_source"], right_on=jointure["cle_cible"]
                 )
@@ -104,45 +93,52 @@ class DataLoader:
     # CHARGEMENT DES ENTITÉS
     # =========================================================
     def _charger_entites(self, config_fichier: dict, classe_cible: Any, nom_base: str) -> None:
-        """Instancie les objets métiers simples (Athlete, Coach, Equipe) à partir du CSV."""
+        """Instancie les objets simples (Athlete, Coach, Equipe)."""
         df_entites = self._charger_donnees_brutes(config_fichier)
 
-        def mapper_et_instancier(ligne_csv):
-            donnees_extraites = self._extraire_champs(ligne_csv, config_fichier["mapping"])
-            return classe_cible(**donnees_extraites)
+        if df_entites.empty:
+            return
 
-        df_entites["objet"] = df_entites.apply(mapper_et_instancier, axis=1)
-        df_entites["id_technique"] = df_entites["objet"].apply(lambda obj: getattr(obj, "id", None))
+        # Remplacement des NaN par None pour une lecture pure Python
+        df_entites = df_entites.where(pd.notnull(df_entites), None)
+        lignes_dict = df_entites.to_dict("records")
 
-        setattr(self, nom_base, df_entites)
+        objets_crees = []
+        for ligne in lignes_dict:
+            donnees_extraites = self._extraire_champs(ligne, config_fichier["mapping"])
+            objets_crees.append(classe_cible(**donnees_extraites))
+
+        # On recrée un DataFrame léger juste pour stocker les objets (pour la recherche)
+        df_final = pd.DataFrame({"objet": objets_crees})
+        df_final["id_technique"] = df_final["objet"].apply(lambda obj: getattr(obj, "id", None))
+
+        setattr(self, nom_base, df_final)
 
     # =========================================================
     # GESTION DES MATCHS
     # =========================================================
     def _charger_matchs(self, config_match: dict, competition_parente: Competition) -> None:
-        """Instancie les objets Match et les associe à la structure de la compétition."""
+        """Instancie les objets Match et les associe en un seul passage."""
         df_matchs = self._charger_donnees_brutes(config_match)
 
-        df_matchs["objet"] = None
+        if df_matchs.empty:
+            return
 
-        if not df_matchs.empty:
-            df_matchs["objet"] = df_matchs.apply(self._instancier_match, axis=1, args=(config_match,))
+        # 1. Nettoyage Pandas ultra-rapide des NaN
+        df_matchs = df_matchs.where(pd.notnull(df_matchs), None)
 
-        self.base_matchs = df_matchs
-
+        # 2. Conversion en dictionnaires (Supprime le goulot d'étranglement de Pandas)
+        lignes_dict = df_matchs.to_dict("records")
         cle_groupement = config_match.get("cle_groupement")
 
-        for ligne in df_matchs.itertuples(index=False):
-            # Avec itertuples, 'ligne' n'est plus un dictionnaire mais un objet avec des attributs.
-            instance_match = getattr(ligne, "objet", None)
-
-            if instance_match is None:
-                continue
+        # 3. Boucle unique
+        for i, ligne in enumerate(lignes_dict):
+            instance_match = self._instancier_match(ligne, config_match, index_ligne=i)
 
             if cle_groupement:
-                valeur_grp = getattr(ligne, cle_groupement, None)
+                valeur_grp = ligne.get(cle_groupement)
 
-                if pd.isna(valeur_grp) or str(valeur_grp).strip().lower() in ["", "nan", "none"]:
+                if valeur_grp is None or str(valeur_grp).strip().lower() in ["", "nan", "none"]:
                     nom_sous_comp = "Tableau Principal"
                 else:
                     nom_sous_comp = str(valeur_grp).strip().removesuffix(".0")
@@ -154,34 +150,35 @@ class DataLoader:
             else:
                 competition_parente.ajouter_match(instance_match)
 
-    def _instancier_match(self, ligne_csv: pd.Series, config_match: dict) -> Match:
-        """Crée une instance de Match et y associe ses objets Performance."""
+        self.base_matchs = df_matchs
 
-        infos_base = self._extraire_champs(ligne_csv, config_match["mapping_base"])
+    def _instancier_match(self, ligne_dict: dict, config_match: dict, index_ligne: int) -> Match:
+        """Crée une instance de Match depuis un dictionnaire natif Python."""
+        infos_base = self._extraire_champs(ligne_dict, config_match["mapping_base"])
 
         if not infos_base.get("id_match"):
-            infos_base["id_match"] = f"M-{ligne_csv.name:04d}"
+            infos_base["id_match"] = f"M-{index_ligne:04d}"
 
         nouveau_match = Match(**infos_base)
-
         regle_victoire = config_match.get("regle_victoire", {})
 
         for role, config_role in config_match["performances"].items():
-            id_participant = str(ligne_csv[config_role["colonne_participant"]])
+            id_participant = str(ligne_dict.get(config_role.get("colonne_participant", "")))
             instance_participant = self._rechercher_participant(id_participant)
 
             if instance_participant:
-                stats = self._extraire_champs(ligne_csv, config_role["stats"])
+                stats = self._extraire_champs(ligne_dict, config_role.get("stats", {}))
                 est_gagnant = self._determiner_victoire(
-                    ligne_csv, stats, role, config_role, regle_victoire, config_match
+                    ligne_dict, stats, role, config_role, regle_victoire, config_match
                 )
 
                 performance = Performance(instance_participant, role, est_gagnant, stats)
 
                 if "colonnes_joueurs" in config_role:
                     for col_joueur in config_role["colonnes_joueurs"]:
-                        if col_joueur in ligne_csv and pd.notna(ligne_csv[col_joueur]):
-                            id_joueur = str(ligne_csv[col_joueur]).strip().removesuffix(".0")
+                        val_joueur = ligne_dict.get(col_joueur)
+                        if val_joueur is not None and str(val_joueur).strip() not in ["", "nan", "None"]:
+                            id_joueur = str(val_joueur).strip().removesuffix(".0")
                             instance_joueur = self._rechercher_participant(id_joueur)
                             if instance_joueur:
                                 performance.joueurs_match.append(instance_joueur)
@@ -193,108 +190,92 @@ class DataLoader:
     # =========================================================
     # LOGIQUE DES RÉSULTATS
     # =========================================================
+
     def _determiner_victoire(
         self,
-        ligne_csv: pd.Series,
+        ligne_dict: dict,
         stats: dict,
         role: str,
         config_role: dict,
         regle_victoire: dict,
         config_match_globale: dict,
     ) -> bool:
-        """Évalue les statistiques ou données brutes pour déterminer le gagnant du match."""
-        methode_evaluation = regle_victoire.get("methode")
+        """Évalue la victoire entre deux participants"""
+        methode = regle_victoire.get("methode")
 
-        if methode_evaluation == "comparaison":
+        if methode == "directe":
+            colonne_cible = regle_victoire.get("colonne_cible", "winner")
+            valeur_csv = str(ligne_dict.get(colonne_cible, "")).strip().lower()
+            valeur_attendue = str(config_role.get("valeur_victoire", "")).strip().lower()
+            id_participant = str(ligne_dict.get(config_role.get("colonne_participant", ""))).strip().lower()
+
+            return valeur_csv in [valeur_attendue, id_participant]
+
+        if methode == "comparaison":
             stat_cible = regle_victoire["stat_cible"]
-
-            # On récupère la liste des mots déclenchant une victoire automatique
-            mots_victoire = regle_victoire.get("victoire_par_defaut", [])
-            # On s'assure que tout est en minuscules pour la comparaison
-            mots_victoire = [str(mot).strip().lower() for mot in mots_victoire]
+            mots_victoire = [str(mot).strip().lower() for mot in regle_victoire.get("victoire_par_defaut", [])]
 
             score_brut_actuel = str(stats.get(stat_cible, "0")).strip().lower()
-
             if score_brut_actuel in mots_victoire:
                 return True
 
-            # Sécurité anti-crash pour le joueur actuel
-            try:
-                score_actuel = float(score_brut_actuel)
-            except ValueError:
-                score_actuel = 0.0
-
-            role_adversaire = next((r for r in config_match_globale["performances"] if r != role), None)
-
-            # Récupération du score de l'adversaire
+            score_actuel = self._convertir_en_nombre(score_brut_actuel)
             score_adversaire = 0.0
-            if role_adversaire:
-                stats_adversaire = self._extraire_champs(
-                    ligne_csv, config_match_globale["performances"][role_adversaire]["stats"]
-                )
-                score_brut_adv = str(stats_adversaire.get(stat_cible, "0")).strip().lower()
 
-                # Si par hasard c'est l'adversaire qui a bénéficié de la victoire par défaut
+            # Trouver le score de l'adversaire
+            role_adv = next((r for r in config_match_globale["performances"] if r != role), None)
+            if role_adv:
+                stats_adv = self._extraire_champs(ligne_dict, config_match_globale["performances"][role_adv]["stats"])
+                score_brut_adv = str(stats_adv.get(stat_cible, "0")).strip().lower()
                 if score_brut_adv in mots_victoire:
-                    return False
+                    return False  # Si l'adversaire a "forfait", on a déjà gagné plus haut. S'il a "w.o", il gagne.
+                score_adversaire = self._convertir_en_nombre(score_brut_adv)
 
-                try:
-                    score_adversaire = float(score_brut_adv)
-                except ValueError:
-                    score_adversaire = 0.0
+            return (
+                score_actuel > score_adversaire
+                if regle_victoire.get("logique") == "plus_grand"
+                else score_actuel < score_adversaire
+            )
 
-            # Détermination du gagnant aux points
-            if regle_victoire.get("logique") == "plus_grand":
-                return score_actuel > score_adversaire
-            return score_actuel < score_adversaire
-
-        if methode_evaluation == "directe":
-            colonne_cible = regle_victoire.get("colonne_cible", "winner")
-
-            valeur_csv = str(ligne_csv.get(colonne_cible, "")).strip().lower()
-            valeur_attendue = str(config_role.get("valeur_victoire", "")).strip().lower()
-            id_participant = str(ligne_csv.get(config_role.get("colonne_participant", ""))).strip().lower()
-
-            if valeur_csv == valeur_attendue or valeur_csv == id_participant:
-                return True
-
+        # Cas par défaut (ex: le JSON dit "victoire_forcee": true pour le rôle "Vainqueur")
         return config_role.get("victoire_forcee") is True
 
     # =========================================================
     # UTILITAIRES
     # =========================================================
-    def _extraire_champs(self, ligne_csv: pd.Series, mapping: dict) -> dict:
-        """Extrait et mappe les colonnes du CSV selon la configuration JSON."""
-        return {
-            cle_objet: ligne_csv[col_csv]
-            for cle_objet, col_csv in mapping.items()
-            if col_csv in ligne_csv and pd.notna(ligne_csv[col_csv])
-        }
+    def _convertir_en_nombre(self, valeur: Any) -> float:
+        """Nettoie les try/except du code principal."""
+        val_propre = str(valeur).strip().lower()
+        if val_propre in ["nan", "none", ""]:
+            return 0.0
+        try:
+            return float(val_propre)
+        except ValueError:
+            return 0.0
+
+    def _extraire_champs(self, ligne_dict: dict, mapping: dict) -> dict:
+        """Extrait les champs depuis un dictionnaire (O(1)) et évite les vérifications lourdes."""
+        resultat = {}
+        for cle_objet, col_csv in mapping.items():
+            valeur = ligne_dict.get(col_csv)
+            if valeur is not None and str(valeur).strip() not in ["", "nan", "None"]:
+                resultat[cle_objet] = valeur
+        return resultat
 
     def _lier_athletes_aux_equipes(self) -> None:
-        """Parcourt les athlètes pour les ajouter à la liste d'athlètes de leur équipe respective."""
-        if self.base_athletes.empty or self.base_equipes.empty:
+        """Associe les athlètes à leurs équipes (Orienté Objet classique)."""
+        if not hasattr(self, "_annuaire_participants"):
             return
 
-        # On crée un annuaire pour trouver les équipes instantanément
-        annuaire_equipes = {}
-        for _, ligne_equipe in self.base_equipes.iterrows():
-            equipe_obj = ligne_equipe["objet"]
-            if equipe_obj:
-                # On référence l'équipe par son ID (ex: "th") ET par son nom (ex: "team heretics")
-                annuaire_equipes[str(equipe_obj.id).strip().lower()] = equipe_obj
-                annuaire_equipes[str(equipe_obj.nom).strip().lower()] = equipe_obj
+        for participant in self._annuaire_participants.values():
+            if isinstance(participant, Athlete):
+                nom_equipe_cible = str(getattr(participant, "equipe_actuelle", "")).strip().lower()
 
-        # On affecte chaque athlète
-        for _, ligne_athlete in self.base_athletes.iterrows():
-            athlete_obj = ligne_athlete["objet"]
-            nom_equipe_cible = str(getattr(athlete_obj, "equipe_actuelle", "")).strip().lower()
+                if nom_equipe_cible and nom_equipe_cible not in ["nan", "none", ""]:
+                    equipe_obj = self._annuaire_participants.get(nom_equipe_cible)
 
-            if nom_equipe_cible and nom_equipe_cible not in ["nan", "none", ""]:
-                equipe_obj = annuaire_equipes.get(nom_equipe_cible)
-
-                if equipe_obj and hasattr(equipe_obj, "ajouter_membre"):
-                    equipe_obj.ajouter_membre(athlete_obj)
+                    if isinstance(equipe_obj, Equipe):
+                        equipe_obj.ajouter_membre(participant)
 
     def _construire_annuaire(self) -> None:
         """Construit un dictionnaire (Hash Map) ultra-rapide pour trouver les participants."""
@@ -305,11 +286,28 @@ class DataLoader:
                     if pd.notna(id_tech):
                         cle = str(id_tech).strip().lower()
                         self._annuaire_participants[cle] = obj
+                        # On indexe aussi par nom d'équipe pour le rattachement
+                        if isinstance(obj, Equipe):
+                            self._annuaire_participants[str(obj.nom).strip().lower()] = obj
 
     def _rechercher_participant(self, id_recherche: str) -> Any | None:
         """Recherche instantanée (O(1)) dans le dictionnaire."""
-        if pd.isna(id_recherche) or str(id_recherche).strip().lower() in ["nan", "none", ""]:
+        if not id_recherche or str(id_recherche).strip().lower() in ["nan", "none", ""]:
             return None
 
         id_recherche_formate = str(id_recherche).strip().lower()
         return self._annuaire_participants.get(id_recherche_formate)
+
+    def ajouter_entite_en_memoire(self, objet: Any, type_entite: str) -> None:
+        """Ajoute proprement un objet (Athlete/Equipe) dans les DataFrames et l'annuaire."""
+        import pandas as pd
+
+        nouvelle_ligne = pd.DataFrame([{"id_technique": objet.id, "objet": objet}])
+
+        if type_entite == "athlete":
+            self.base_athletes = pd.concat([self.base_athletes, nouvelle_ligne], ignore_index=True)
+        elif type_entite == "equipe":
+            self.base_equipes = pd.concat([self.base_equipes, nouvelle_ligne], ignore_index=True)
+            self._annuaire_participants[str(objet.nom).strip().lower()] = objet
+
+        self._annuaire_participants[str(objet.id).strip().lower()] = objet

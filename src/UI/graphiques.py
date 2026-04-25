@@ -1,8 +1,6 @@
 from math import pi
 from typing import Any
 
-import matplotlib.pyplot as plt
-
 
 def extraire_matchs(comp):
     matchs = list(comp.liste_match)
@@ -13,6 +11,7 @@ def extraire_matchs(comp):
 
 def generer_top_5_winrate(competition) -> None:
     """Affiche le Top 5 des participants par taux de victoire (Format Rapport/Clair)."""
+    import matplotlib.pyplot as plt
 
     bilan: dict[str, dict] = {}
 
@@ -80,10 +79,12 @@ def generer_top_5_winrate(competition) -> None:
     # On allège l'axe Y (les noms)
     ax.tick_params(axis="y", length=0)
 
+    chemin_export = "top_5.png"
+    plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
+    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+
     plt.tight_layout()
     plt.show()
-
-    # Restauration du style par défaut pour ne pas impacter le reste
     plt.style.use("default")
 
 
@@ -175,6 +176,10 @@ def generer_distribution_matchs(competition) -> None:
     # Nettoyage des bordures
     ax.spines[["top", "right"]].set_visible(False)
 
+    chemin_export = "distrib_matchs.png"
+    plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
+    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+
     plt.tight_layout()
     plt.show()
     plt.style.use("default")
@@ -182,6 +187,7 @@ def generer_distribution_matchs(competition) -> None:
 
 def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
     """Génère un nuage de points professionnel pour rapport (Thème clair et moyennes)."""
+    import matplotlib.pyplot as plt
 
     bilan_joueurs: dict[str, Any] = {}
 
@@ -253,6 +259,10 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
     ax.set_xlabel(f"{nom_x_propre} (Moyenne par match)", fontsize=10)
     ax.set_ylabel(f"{nom_y_propre} (Moyenne par match)", fontsize=10)
 
+    chemin_export = "nuage_points_stats.png"
+    plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
+    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+
     # Nettoyage final
     ax.spines[["top", "right"]].set_visible(False)
     plt.tight_layout()
@@ -262,6 +272,7 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
 
 def generer_radar_profil(competition, nom_cible: str) -> None:
     """Génère un profil (Radar Chart) normalisé d'un participant vs la Moyenne."""
+    import matplotlib.pyplot as plt
 
     bilan: dict = {}
 
@@ -349,7 +360,10 @@ def generer_radar_profil(competition, nom_cible: str) -> None:
     plt.title(f"Diagramme Radar : {vrai_nom}", size=12, fontweight="bold", pad=30)
     plt.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
 
-    ax.spines["polar"].set_visible(False)
+    chemin_export = "radar_profil.png"
+    plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
+    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
 
+    ax.spines["polar"].set_visible(False)
     plt.show()
     plt.style.use("default")
