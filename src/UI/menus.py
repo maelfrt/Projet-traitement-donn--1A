@@ -250,8 +250,19 @@ def menu_recherche_profil(controller: AppController) -> None:
             choix_idx = int(choix_profil)
             if 1 <= choix_idx <= total:
                 objet_choisi = resultats_globaux[choix_idx - 1]
-                afficher_profil(objet_choisi, controller.competition_actuelle)
+
+                matchs_recents = afficher_profil(objet_choisi, controller.competition_actuelle)
+
+                if matchs_recents:
+                    choix_m = demander_saisie("\nNuméro du match pour plus de détails (ou Entrée pour retour) : ")
+                    if choix_m.isdigit():
+                        idx_m = int(choix_m)
+                        if 1 <= idx_m <= len(matchs_recents):
+                            match_cible = matchs_recents[idx_m - 1][0]
+                            afficher_details_match(match_cible)
+
                 demander_saisie("\nAppuyez sur Entrée pour continuer...")
+
             elif choix_idx != 0:
                 print("Numéro invalide. Retour au menu.")
         except ValueError:

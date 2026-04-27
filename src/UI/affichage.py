@@ -98,7 +98,7 @@ def afficher_details_match(match: Match) -> None:
                     print(f"   - {cle_nom:25} : {valeur_str}")
 
 
-def afficher_profil(entite, competition: Competition | None) -> None:
+def afficher_profil(entite, competition: Competition | None) -> list:
     """Affiche un tableau de bord exhaustif et dynamique d'une Équipe ou d'un Joueur."""
 
     def est_valide(valeur) -> bool:
@@ -242,6 +242,7 @@ def afficher_profil(entite, competition: Competition | None) -> None:
 
     if not competition:
         print("Aucune compétition chargée.")
+        return []
     else:
         tous_les_matchs = competition.obtenir_tous_les_matchs()
         historique = []
@@ -271,6 +272,7 @@ def afficher_profil(entite, competition: Competition | None) -> None:
         total_matchs = len(historique)
         if total_matchs == 0:
             print("Aucun match enregistré pour ce participant.")
+            return []
         else:
             winrate = (victoires / total_matchs) * 100
             print(f"Matchs joués : {total_matchs:2d}")
@@ -298,6 +300,7 @@ def afficher_profil(entite, competition: Competition | None) -> None:
                         break
 
                 print(f"{i:2d}. {statut} | {date_propre}vs {nom_adversaire}")
+            return matchs_visibles
 
 
 def afficher_statistiques_globales(stats: dict) -> None:

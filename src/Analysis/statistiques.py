@@ -1,12 +1,11 @@
 from typing import Any
 
 from src.Model.athlete import Athlete
-from src.Model.competition import Competition
 from src.Model.equipe import Equipe
 
 
-def calculer_statistiques_globales(competition: Competition, liste_entites: list) -> dict:
-    """Fonction principale, agissant comme un chef d'orchestre très lisible."""
+def calculer_statistiques_globales(competition, liste_entites: list) -> dict:
+    """Chef d'orchestre des statistiques (Version Haute Performance)."""
     tous_les_matchs = competition.obtenir_tous_les_matchs()
 
     stats: dict[str, Any] = {
@@ -15,21 +14,17 @@ def calculer_statistiques_globales(competition: Competition, liste_entites: list
         "total_matchs": len(tous_les_matchs),
     }
 
-    # On fusionne les résultats des petits modules spécialisés
+    # 1. Calcul de l'âge (rapide car la liste des inscrits est petite)
     stats.update(_calculer_records_age(liste_entites))
-    stats.update(_calculer_records_winrate(tous_les_matchs))
-    stats.update(_calculer_demographie(liste_entites, tous_les_matchs))
+
+    # 2. Calcul mutualisé des matchs en un seul passage (O(N))
+    stats.update(_calculer_statistiques_matchs(tous_les_matchs, liste_entites))
 
     return stats
 
 
-# ==========================================
-# SOUS-FONCTIONS SPÉCIALISÉES
-# ==========================================
-
-
 def _calculer_records_age(liste_entites: list) -> dict:
-    """Ne s'occupe QUE de trouver le plus jeune et le plus vieux."""
+    """Trouve le plus jeune et le plus vieux très rapidement."""
     athletes_valides = [a for a in liste_entites if isinstance(a, Athlete) and a.age() is not None]
     if not athletes_valides:
         return {}
@@ -43,78 +38,88 @@ def _calculer_records_age(liste_entites: list) -> dict:
     }
 
 
-def _calculer_records_winrate(tous_les_matchs: list) -> dict:
-    """Ne s'occupe QUE de l'activité et des taux de victoires."""
-    bilan: dict[str, dict[str, Any]] = {}
+def _calculer_statistiques_matchs(tous_les_matchs: list, liste_entites: list) -> dict:
+    """
+    Calcule les winrates ET la démographie en un seul passage sur les matchs.
+    """
+    bilan_joueurs: dict[str, Any] = {}
+    bilan_prov: dict[str, Any] = {}
+    repartition_prov: dict[str, Any] = {}
 
-    for match in tous_les_matchs:
-        for perf in match.performances.values():
-            pid = str(perf.participant.id)
-            if pid not in bilan:
-                bilan[pid] = {"nom": perf.participant.nom, "joues": 0, "victoires": 0}
+    valeurs_nulles = {"nan", "none", "", "aucun", "inconnu"}
 
-            bilan[pid]["joues"] += 1
-            if perf.est_gagnant:
-                bilan[pid]["victoires"] += 1
-
-    if not bilan:
-        return {}
-
-    resultats = {}
-    plus_actif = max(bilan.values(), key=lambda x: int(x["joues"]))
-    resultats["plus_actif"] = {"nom": plus_actif["nom"], "joues": plus_actif["joues"]}
-
-    valides_wr = [p for p in bilan.values() if int(p["joues"]) >= 3]
-    if valides_wr:
-        meilleur = max(valides_wr, key=lambda x: (x["victoires"] / x["joues"], x["joues"]))
-        resultats["meilleur_winrate"] = {
-            "nom": meilleur["nom"],
-            "winrate": (meilleur["victoires"] / meilleur["joues"]) * 100,
-            "joues": meilleur["joues"],
-        }
-    return resultats
-
-
-def _calculer_demographie(liste_entites: list, tous_les_matchs: list) -> dict:
-    """Ne s'occupe QUE des pays/provenances."""
-    repartition: dict[str, int] = {}
-    bilan_prov: dict[str, dict[str, Any]] = {}
-
+    # --- Répartition des provenances des inscrits ---
     for entite in liste_entites:
         prov = getattr(entite, "provenance", None)
-        if prov and str(prov).strip().lower() not in ["nan", "none", "", "aucun", "inconnu"]:
-            repartition[prov] = repartition.get(prov, 0) + 1
+        if prov:
+            prov_clean = str(prov).strip().lower()
+            if prov_clean not in valeurs_nulles:
+                # Initialisation manuelle si la clé n'existe pas
+                if prov not in repartition_prov:
+                    repartition_prov[prov] = 0
+                repartition_prov[prov] += 1
 
     for match in tous_les_matchs:
         for perf in match.performances.values():
             participant = perf.participant
+            pid = str(participant.id)
+
+            # 1. Mise à jour Winrate Joueur
+            if pid not in bilan_joueurs:
+                # Initialisation manuelle
+                bilan_joueurs[pid] = {"joues": 0, "victoires": 0, "nom": participant.nom}
+
+            bilan_joueurs[pid]["joues"] += 1
+            if perf.est_gagnant:
+                bilan_joueurs[pid]["victoires"] += 1
+
+            # 2. Mise à jour Winrate Provenance
             prov = getattr(participant, "provenance", None)
 
-            if (
-                (not prov or str(prov).lower() in ["nan", "none", ""])
-                and isinstance(participant, Equipe)
-                and participant.liste_athlete
-            ):
+            # Gestion du cas des équipes sans provenance propre
+            if not prov and isinstance(participant, Equipe) and participant.liste_athlete:
                 prov = getattr(participant.liste_athlete[0], "provenance", None)
 
-            if prov and str(prov).strip().lower() not in ["nan", "none", "", "aucun", "inconnu"]:
-                if prov not in bilan_prov:
-                    bilan_prov[prov] = {"joues": 0, "victoires": 0}
-                bilan_prov[prov]["joues"] += 1
-                if perf.est_gagnant:
-                    bilan_prov[prov]["victoires"] += 1
+            if prov:
+                prov_clean = str(prov).strip().lower()
+                if prov_clean not in valeurs_nulles:
+                    # Initialisation manuelle
+                    if prov not in bilan_prov:
+                        bilan_prov[prov] = {"joues": 0, "victoires": 0}
 
+                    bilan_prov[prov]["joues"] += 1
+                    if perf.est_gagnant:
+                        bilan_prov[prov]["victoires"] += 1
+
+    # ---  Extraction des records ---
     resultats: dict[str, Any] = {}
-    if repartition:
-        resultats["top_provenances"] = sorted(repartition.items(), key=lambda x: x[1], reverse=True)[:3]
+
+    # Records Joueurs
+    if bilan_joueurs:
+        plus_actif = max(bilan_joueurs.values(), key=lambda x: x["joues"])
+        resultats["plus_actif"] = {"nom": plus_actif["nom"], "joues": plus_actif["joues"]}
+
+        valides_wr = [p for p in bilan_joueurs.values() if p["joues"] >= 3]
+        if valides_wr:
+            meilleur = max(valides_wr, key=lambda x: x["victoires"] / x["joues"])
+            resultats["meilleur_winrate"] = {
+                "nom": meilleur["nom"],
+                "winrate": (meilleur["victoires"] / meilleur["joues"]) * 100,
+                "joues": meilleur["joues"],
+            }
+
+    # Records Provenances
+    if repartition_prov:
+        resultats["top_provenances"] = sorted(repartition_prov.items(), key=lambda x: x[1], reverse=True)[:3]
 
     valides_prov = {k: v for k, v in bilan_prov.items() if v["joues"] >= 3}
     if valides_prov:
-        meilleur = max(valides_prov.items(), key=lambda x: x[1]["victoires"] / x[1]["joues"])
+        meilleur_p = max(valides_prov.items(), key=lambda x: x[1]["victoires"] / x[1]["joues"])
         resultats["meilleur_winrate_provenance"] = {
-            "pays": meilleur[0],
-            "winrate": (meilleur[1]["victoires"] / meilleur[1]["joues"]) * 100,
-            "joues": meilleur[1]["joues"],
+            "pays": meilleur_p[0],
+            "winrate": (meilleur_p[1]["victoires"] / meilleur_p[1]["joues"]) * 100,
+            "joues": meilleur_p[1]["joues"],
             "seuil": 3,
         }
+
     return resultats
