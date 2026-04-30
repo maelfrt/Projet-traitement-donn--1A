@@ -22,11 +22,17 @@ class Performance:
     """
 
     def __init__(
-        self, participant: Participant, role: str, est_gagnant: bool = False, stats: dict[str, Any] | None = None
+        self,
+        participant: Participant,
+        role: str,
+        est_gagnant: bool = False,
+        est_nul: bool = False,
+        stats: dict[str, Any] | None = None,
     ) -> None:
         self.participant = participant
         self.role = role
         self.est_gagnant = est_gagnant
+        self.est_nul = est_nul
 
         # On s'assure que stats est toujours un dictionnaire pour éviter les erreurs de type
         self.stats = stats if stats is not None else {}
@@ -58,6 +64,7 @@ class Performance:
             "nom_participant": self.participant.nom,
             "role": self.role,
             "est_gagnant": self.est_gagnant,
+            "est_nul": self.est_nul,
         }
 
         # On fusionne avec le dictionnaire des statistiques chiffrées
@@ -66,5 +73,10 @@ class Performance:
         return resultat
 
     def __str__(self) -> str:
-        verdict = "Victoire" if self.est_gagnant else "Défaite"
+        if self.est_gagnant:
+            verdict = "Victoire"
+        elif getattr(self, "est_nul", False):
+            verdict = "Match nul"
+        else:
+            verdict = "Défaite"
         return f"Performance de {self.participant.nom} ({self.role}) - {verdict}"

@@ -140,18 +140,26 @@ def afficher_bilan_historique(nom: str, stats: dict[str, Any], historique: list[
         return
 
     victoires = stats.get("victoires", 0)
-    defaites = stats.get("defaites", total - victoires)
+    nuls = stats.get("nuls", 0)
+    defaites = stats.get("defaites", total - victoires - nuls)
     winrate = stats.get("winrate", 0.0)
 
     # Affichage du bilan chiffré
     print(f"{'Matchs joués'.ljust(12)} : {total}")
     print(f"{'Victoires'.ljust(12)} : {victoires}")
+    if nuls > 0:
+        print(f"{'Nuls'.ljust(12)} : {nuls}")
     print(f"{'Défaites'.ljust(12)} : {defaites}")
     print(f"{'Winrate'.ljust(12)} : {winrate:.1f} %\n")
 
     print("Historique récent :")
     for i, match_data in enumerate(historique[:15], 1):
-        statut = "🏆 V" if match_data.get("gagne") else "🥈 D"
+        if match_data.get("gagne"):
+            statut = "🏆 V"
+        elif match_data.get("nul"):
+            statut = "🤝 N"
+        else:
+            statut = "❌ D"
 
         date_raw = match_data.get("date", "")
         if DataLoader._est_valeur_valide(date_raw) and date_raw != "Date inconnue":
@@ -270,7 +278,12 @@ def afficher_details_match(match: Match) -> None:
 
     # Affichage des performances individuelles ou collectives
     for role, perf in match.performances.items():
-        embleme = "🏆 [GAGNANT]" if perf.est_gagnant else "🥈 [PERDANT]"
+        if perf.est_gagnant:
+            embleme = "🏆 [GAGNANT]"
+        elif getattr(perf, "est_nul", False):
+            embleme = "🤝 [NUL]"
+        else:
+            embleme = "🥈 [PERDANT]"
         print(f"\n   {embleme} {role} : {perf.participant.nom}")
 
         if not perf.stats:

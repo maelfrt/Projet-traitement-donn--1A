@@ -185,13 +185,14 @@ class AppController:
         tuple[dict[str, Any], list[dict[str, Any]]]
             Un dictionnaire de statistiques cumulées et la liste chronologique des matchs.
         """
-        stats_vides = {"total": 0, "victoires": 0, "defaites": 0, "winrate": 0.0}
+        stats_vides = {"total": 0, "victoires": 0, "defaites": 0, "nuls": 0, "winrate": 0.0}
         if not self.competition_actuelle:
             return stats_vides, []
 
         tous_matchs = self.competition_actuelle.obtenir_tous_les_matchs()
         historique = []
         victoires = 0
+        nuls = 0
 
         for m in tous_matchs:
             for role, perf in m.performances.items():
@@ -216,6 +217,7 @@ class AppController:
                     historique.append(
                         {
                             "gagne": perf.est_gagnant,
+                            "nul": getattr(perf, "est_nul", False),
                             "date": m.date_objet.strftime("%Y/%m/%d") if m.date_objet else "N/A",
                             "adversaire": adv,
                             "match": m,
@@ -223,6 +225,8 @@ class AppController:
                     )
                     if perf.est_gagnant:
                         victoires += 1
+                    elif getattr(perf, "est_nul", False):
+                        nuls += 1
 
         total = len(historique)
         if total == 0:
@@ -231,6 +235,7 @@ class AppController:
         stats = {
             "total": total,
             "victoires": victoires,
+            "nuls": nuls,
             "defaites": total - victoires,
             "winrate": (victoires / total) * 100,
         }

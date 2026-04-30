@@ -284,11 +284,11 @@ class DataLoader:
             if instance_participant:
                 stats = self._filtrer_via_mapping_json(ligne_dict, config_role.get("stats", {}))
 
-                est_gagnant = self._determiner_victoire(
+                est_gagnant, est_nul = self._determiner_resultat(
                     ligne_dict, stats, role, config_role, regle_victoire, config_match
                 )
 
-                performance = Performance(instance_participant, role, est_gagnant, stats)
+                performance = Performance(instance_participant, role, est_gagnant, est_nul, stats)
 
                 # Rattachement spécifique des joueurs lors de sports collectifs
                 for col_joueur in config_role.get("colonnes_joueurs", []):
@@ -303,7 +303,7 @@ class DataLoader:
 
         return nouveau_match
 
-    def _determiner_victoire(
+    def _determiner_resultat(
         self,
         ligne_dict: dict,
         stats: dict,
@@ -333,7 +333,7 @@ class DataLoader:
             valeur_attendue = str(config_role.get("valeur_victoire", "")).strip().lower()
             id_participant = str(ligne_dict.get(config_role.get("colonne_participant", ""))).strip().lower()
 
-            return valeur_csv in [valeur_attendue, id_participant]
+            return valeur_csv in [valeur_attendue, id_participant], False
 
         if methode == "comparaison":
             stat_cible = regle_victoire["stat_cible"]
@@ -343,7 +343,7 @@ class DataLoader:
 
             # Application automatique de la victoire en cas de forfait adverse
             if score_brut_actuel in mots_victoire:
-                return True
+                return True, False
 
             # Recherche dynamique du score de l'adversaire direct
             roles_disponibles = list(config_match_globale["performances"].keys())
@@ -355,18 +355,23 @@ class DataLoader:
             score_brut_adv = str(stats_adv.get(stat_cible, "0")).strip().lower()
 
             if score_brut_adv in mots_victoire:
-                return False
+                return False, False
 
             score_actuel = self._convertir_en_nombre(score_brut_actuel)
             score_adversaire = self._convertir_en_nombre(score_brut_adv)
 
-            return (
+            # Gestion du match nul
+            if score_actuel == score_adversaire:
+                return False, True
+
+            est_gagnant = (
                 score_actuel > score_adversaire
                 if regle_victoire.get("logique") == "plus_grand"
                 else score_actuel < score_adversaire
             )
+            return est_gagnant, False
 
-        return config_role.get("victoire_forcee") is True
+        return config_role.get("victoire_forcee") is True, False
 
     # =========================================================================
     # OUTILS ET OPTIMISATIONS MÉMOIRE

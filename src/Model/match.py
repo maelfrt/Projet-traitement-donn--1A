@@ -135,8 +135,8 @@ class Match:
 
     def __str__(self) -> str:
         """
-        Définit comment un match s'affiche lorsqu'on utilise print().
-        Format attendu : [YYYY/MM/DD] Equipe A vs Equipe B | 🏆 Gagnant (Rôle)
+        Définit comment un match s'affiche textuellement dans les listes.
+        S'adapte dynamiquement pour afficher une victoire, un nul ou un match non joué.
         """
         # Formatage de la date
         if self.date_objet:
@@ -144,18 +144,27 @@ class Match:
         else:
             date_str = "Date inconnue"
 
-        # Récupération des participants et du gagnant
         participants = []
-        vainqueur_str = "Match nul / Non joué"
+        resultat_str = "❔ Non joué / Résultat inconnu"
+        match_est_nul = False
 
+        # Récupération des participants et analyse du résultat
         for role, perf in self.performances.items():
             nom = str(perf.participant.nom)
             participants.append(nom)
 
             if perf.est_gagnant:
-                vainqueur_str = f"{nom} ({role.capitalize()})"
+                # Si on trouve un gagnant, on formate directement sa chaîne
+                resultat_str = f"🏆 {nom} ({role.capitalize()})"
+            elif getattr(perf, "est_nul", False):
+                # On note qu'un état nul a été détecté pour cette rencontre
+                match_est_nul = True
 
-        # Création du texte "Equipe A vs Equipe B"
+        # Si aucun vainqueur n'a été trouvé mais que le match est déclaré nul
+        if "🏆" not in resultat_str and match_est_nul:
+            resultat_str = "🤝 Match nul"
+
+        # Création de l'affiche "Equipe A vs Equipe B"
         if len(participants) >= 2:
             affiche = f"{participants[0]} vs {participants[1]}"
         elif len(participants) == 1:
@@ -163,4 +172,5 @@ class Match:
         else:
             affiche = "Match sans participants"
 
-        return f"[{date_str}] {affiche} | 🏆 {vainqueur_str}"
+        # Affichage final assemblé (l'émoji est désormais géré dans resultat_str)
+        return f"[{date_str}] {affiche} | {resultat_str}"
