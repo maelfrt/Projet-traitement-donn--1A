@@ -2,20 +2,13 @@ from math import pi
 from typing import Any
 
 
-def extraire_matchs(comp):
-    matchs = list(comp.liste_match)
-    for sc in comp.sous_competitions.values():
-        matchs.extend(extraire_matchs(sc))
-    return matchs
-
-
 def generer_top_5_winrate(competition) -> None:
     """Affiche le Top 5 des participants par taux de victoire (Format Rapport/Clair)."""
     import matplotlib.pyplot as plt
 
     bilan: dict[str, dict] = {}
 
-    tous_les_matchs = extraire_matchs(competition)
+    tous_les_matchs = competition.obtenir_tous_les_matchs()
 
     for match in tous_les_matchs:
         for perf in match.performances.values():
@@ -26,8 +19,8 @@ def generer_top_5_winrate(competition) -> None:
             if perf.est_gagnant:
                 bilan[nom]["victoires"] += 1
 
-    # Filtrage statistique (minimum 3 matchs)
-    MIN_MATCHS = 3
+    # Filtrage (minimum 3 matchs)
+    MIN_MATCHS = 5
     stats_winrate = []
     for nom, data in bilan.items():
         if data["joues"] >= MIN_MATCHS:
@@ -45,14 +38,11 @@ def generer_top_5_winrate(competition) -> None:
     noms = [f"{x['nom']} ({x['joues']} m.)" for x in top_5]
     valeurs = [x["winrate"] for x in top_5]
 
-    # --- DESIGN POUR RAPPORT (THÈME CLAIR) ---
     plt.style.use("seaborn-v0_8-whitegrid")
     _, ax = plt.subplots(figsize=(9, 5))
 
-    # Couleur sobre (Bleu Acier) sans bordures dures pour un aspect institutionnel
     bars = ax.barh(noms, valeurs, color="#4682B4", alpha=0.85, edgecolor="none")
 
-    # Ajout des étiquettes de pourcentage
     for bar in bars:
         ax.text(
             bar.get_width() + 1.5,
@@ -62,7 +52,7 @@ def generer_top_5_winrate(competition) -> None:
             fontsize=10,
             fontweight="bold",
             color="#2c3e50",
-        )  # Texte sombre pour contraster avec le fond clair
+        )
 
     # Titre et axes
     ax.set_title(
@@ -70,18 +60,17 @@ def generer_top_5_winrate(competition) -> None:
     )
     ax.set_xlabel("Pourcentage de victoire (%)", fontsize=11, color="#34495e")
 
-    # Esthétique des bordures : on retire les traits inutiles pour aérer
-    ax.set_xlim(0, 115)  # Marge pour ne pas couper le texte
+    ax.set_xlim(0, 115)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)  # On enlève la ligne verticale de gauche
+    ax.spines["left"].set_visible(False)
 
     # On allège l'axe Y (les noms)
     ax.tick_params(axis="y", length=0)
 
     chemin_export = "top_5.png"
     plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
-    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+    print(f"\nGraphique généré et sauvegardé avec succès : {chemin_export}")
 
     plt.tight_layout()
     plt.show()
@@ -89,10 +78,10 @@ def generer_top_5_winrate(competition) -> None:
 
 
 def generer_distribution_matchs(competition) -> None:
-    """Affiche la distribution des matchs avec regroupement automatique (bins)."""
+    """Affiche la distribution des matchs avec un regroupement automatique par plage."""
     import matplotlib.pyplot as plt
 
-    tous_les_matchs = extraire_matchs(competition)
+    tous_les_matchs = competition.obtenir_tous_les_matchs()
     bilan_compteur: dict[str, int] = {}
 
     for match in tous_les_matchs:
@@ -178,7 +167,7 @@ def generer_distribution_matchs(competition) -> None:
 
     chemin_export = "distrib_matchs.png"
     plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
-    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+    print(f"\nGraphique généré et sauvegardé avec succès : {chemin_export}")
 
     plt.tight_layout()
     plt.show()
@@ -186,12 +175,12 @@ def generer_distribution_matchs(competition) -> None:
 
 
 def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
-    """Génère un nuage de points professionnel pour rapport (Thème clair et moyennes)."""
+    """Génère un nuage de points qui montre la corrélation entre deux statistiques."""
     import matplotlib.pyplot as plt
 
     bilan_joueurs: dict[str, Any] = {}
 
-    for match in extraire_matchs(competition):
+    for match in competition.obtenir_tous_les_matchs():
         for perf in match.performances.values():
             if stat_x in perf.stats and stat_y in perf.stats:
                 try:
@@ -209,7 +198,7 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
                     pass
 
     if not bilan_joueurs:
-        print(f"⚠️ Données insuffisantes pour comparer '{stat_x}' et '{stat_y}'.")
+        print(f"⚠️  Données insuffisantes pour comparer '{stat_x}' et '{stat_y}'.")
         return
 
     # Calcul des moyennes par match
@@ -224,7 +213,6 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
     plt.style.use("seaborn-v0_8-whitegrid")
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    # Points semi-transparents avec une palette élégante (viridis)
     scatter = ax.scatter(
         x_vals, y_vals, s=tailles, alpha=0.5, c=y_vals, cmap="viridis", edgecolors="#2c3e50", linewidths=0.5
     )
@@ -232,7 +220,6 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
     nom_x_propre = stat_x.replace("_", " ").capitalize()
     nom_y_propre = stat_y.replace("_", " ").capitalize()
 
-    # Barre de couleur sobre
     cbar = fig.colorbar(scatter, ax=ax)
     cbar.set_label(f"{nom_y_propre} (Moyenne)", fontsize=10)
 
@@ -261,7 +248,7 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
 
     chemin_export = "nuage_points_stats.png"
     plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
-    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+    print(f"\nGraphique généré et sauvegardé avec succès : {chemin_export}")
 
     # Nettoyage final
     ax.spines[["top", "right"]].set_visible(False)
@@ -271,13 +258,13 @@ def generer_nuage_points_stats(competition, stat_x: str, stat_y: str) -> None:
 
 
 def generer_radar_profil(competition, nom_cible: str) -> None:
-    """Génère un profil (Radar Chart) normalisé d'un participant vs la Moyenne."""
+    """Génère un profil (Radar Chart) d'un participant comparée à la moyenne des autres participants."""
     import matplotlib.pyplot as plt
 
     bilan: dict = {}
 
     # Extraction et somme des statistiques
-    for match in extraire_matchs(competition):
+    for match in competition.obtenir_tous_les_matchs():
         for perf in match.performances.values():
             nom = perf.participant.nom
             if nom not in bilan:
@@ -333,7 +320,6 @@ def generer_radar_profil(competition, nom_cible: str) -> None:
     valeurs_moyennes += valeurs_moyennes[:1]
     angles += angles[:1]
 
-    # --- DESIGN DU GRAPHIQUE ---
     plt.style.use("seaborn-v0_8-whitegrid")
 
     _, ax = plt.subplots(figsize=(8, 9.5), subplot_kw={"polar": True})
@@ -362,7 +348,7 @@ def generer_radar_profil(competition, nom_cible: str) -> None:
 
     chemin_export = "radar_profil.png"
     plt.savefig(chemin_export, bbox_inches="tight", dpi=300)
-    print(f"\n Graphique généré et sauvegardé avec succès : {chemin_export}")
+    print(f"\nGraphique généré et sauvegardé avec succès : {chemin_export}")
 
     ax.spines["polar"].set_visible(False)
     plt.show()

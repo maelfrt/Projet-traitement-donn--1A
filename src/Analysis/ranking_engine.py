@@ -5,36 +5,75 @@ from src.Model.competition import Competition
 
 class RankingEngine:
     """
-    Moteur responsable de générer le classement final d'une compétition.
+    Moteur algorithmique responsable de la génération des classements.
+
+    Cette classe analyse les résultats des matchs d'une compétition et
+    détermine la position finale de chaque participant en appliquant
+    les règles spécifiques au format du tournoi (championnat régulier
+    ou arbre à élimination directe).
     """
 
     def generer_classement(self, competition: Competition) -> None:
-        """Point d'entrée principal. Détecte le format et lance le bon calcul à tous les niveaux."""
+        """
+        Génère et met à jour le classement final d'un tournoi complet.
 
-        # On fait le calcul aux sous-tournois
+        La méthode s'applique d'abord au tableau principal, puis descend
+        automatiquement dans les sous-groupes existants pour s'assurer
+        que chaque phase possède son propre classement à jour.
+
+        Parameters
+        ----------
+        competition : Competition
+            L'objet compétition dont les classements doivent être calculés.
+        """
+        self._classer_un_niveau(competition)
+
         for sous_comp in competition.sous_competitions.values():
-            self.generer_classement(sous_comp)
+            self._classer_un_niveau(sous_comp)
 
-        # Vérification des matchs au niveau actuel
-        if not hasattr(competition, "liste_match") or not competition.liste_match:
-            competition.classement_final = []
+    def _classer_un_niveau(self, comp: Competition) -> None:
+        """
+        Aiguille le calcul du classement vers l'algorithme approprié.
+
+        Vérifie la présence de matchs et le format déclaré de la
+        compétition pour appliquer la logique sportive adéquate.
+
+        Parameters
+        ----------
+        comp : Competition
+            Le niveau de compétition (racine ou poule) à évaluer.
+        """
+        if not getattr(comp, "liste_match", []):
+            comp.classement_final = []
             return
 
-        format_cible = str(getattr(competition, "type_format", "championnat")).strip().lower()
+        format_cible = str(getattr(comp, "type_format", "championnat")).strip().lower()
 
         if format_cible == "championnat":
-            resultats = self._calculer_championnat(competition)
+            comp.classement_final = self._calculer_championnat(comp)
         elif format_cible == "elimination":
-            resultats = self._calculer_elimination(competition)
+            comp.classement_final = self._calculer_elimination(comp)
         else:
-            resultats = []
+            comp.classement_final = []
 
-        competition.classement_final = resultats
+    def _calculer_championnat(self, comp: Competition) -> list[dict[str, Any]]:
+        """
+        Calcule le classement basé sur l'accumulation de victoires.
 
-    def _calculer_championnat(self, competition: Competition) -> list[dict[str, Any]]:
+        Parameters
+        ----------
+        comp : Competition
+            La compétition au format ligue à évaluer.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            Une liste de dictionnaires représentant le classement trié,
+            du vainqueur au dernier.
+        """
         bilan_participants: dict[str, dict[str, Any]] = {}
 
-        for match in competition.liste_match:
+        for match in comp.liste_match:
             for performance in match.performances.values():
                 id_joueur = str(performance.participant.id)
                 nom_joueur = str(performance.participant.nom)
@@ -43,21 +82,42 @@ class RankingEngine:
                     bilan_participants[id_joueur] = {"nom": nom_joueur, "victoires": 0, "matchs_joues": 0}
 
                 bilan_participants[id_joueur]["matchs_joues"] = int(bilan_participants[id_joueur]["matchs_joues"]) + 1
+
                 if performance.est_gagnant:
                     bilan_participants[id_joueur]["victoires"] = int(bilan_participants[id_joueur]["victoires"]) + 1
 
         liste_bilan = list(bilan_participants.values())
 
+        # Tri décroissant direct en se basant sur le compteur de victoires
         liste_triee = sorted(liste_bilan, key=lambda x: int(x["victoires"]), reverse=True)
 
         return liste_triee
 
-    def _calculer_elimination(self, competition: Competition) -> list[dict[str, Any]]:
-        bilan_participants: dict[str, dict[str, Any]] = {}
-        hierarchie_json = competition.poids_rounds or {}
+    def _calculer_elimination(self, comp: Competition) -> list[dict[str, Any]]:
+        """
+        Calcule le classement pour un tournoi à élimination directe.
 
-        for match in competition.liste_match:
+        L'algorithme identifie le tour le plus avancé atteint par chaque
+        participant. Il utilise un système de poids défini dans la
+        configuration JSON pour hiérarchiser les tours.
+
+        Parameters
+        ----------
+        comp : Competition
+            La compétition au format tournoi à évaluer.
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            Une liste triée des participants, du vainqueur final aux
+            éliminés des premiers tours.
+        """
+        bilan_participants: dict[str, dict[str, Any]] = {}
+        hierarchie_json = comp.poids_rounds or {}
+
+        for match in comp.liste_match:
             nom_du_tour = str(match.type_match)
+            # Poids arbitraire élevé appliqué si le tour n'est pas répertorié dans la configuration
             poids_de_base = hierarchie_json.get(nom_du_tour, 99)
 
             for performance in match.performances.values():
@@ -76,6 +136,8 @@ class RankingEngine:
                         "victoires_totales": 0,
                     }
                 else:
+                    # Mise à jour conditionnelle : on ne conserve que la meilleure performance
+                    # (la note numérique la plus basse correspond au tour le plus avancé)
                     poids_actuel = float(bilan_participants[id_joueur]["poids_atteint"])
                     if poids_definitif < poids_actuel:
                         bilan_participants[id_joueur]["poids_atteint"] = float(poids_definitif)
@@ -88,12 +150,8 @@ class RankingEngine:
 
         liste_bilan = list(bilan_participants.values())
 
-        def critere_de_tri(joueur: dict) -> tuple[float, int]:
-            """
-            Définit comment Python doit trier les joueurs.
-            Le poids le plus petit en premier (ex: 0.0 pour le vainqueur de la finale).
-            En cas d'égalité, on regarde le nombre de victoires.
-            """
+        # Règle de tri : la meilleure note (la plus petite) en premier, et en cas d'égalité, le plus de victoires
+        def critere_de_tri(joueur: dict[str, Any]) -> tuple[float, int]:
             poids = float(joueur["poids_atteint"])
             victoires_inversees = -int(joueur["victoires_totales"])
             return (poids, victoires_inversees)
@@ -104,15 +162,24 @@ class RankingEngine:
 
     def _departager_finalistes(self, nom_du_tour: str, est_gagnant: bool, poids_de_base: int) -> float:
         """
-        Attribue un score numérique (poids) pour forcer le tri du classement.
-        Le plus petit score sera le 1er du classement.
+        Attribue une note numérique finale selon le résultat dans un tour.
 
-        Par exemple,
-        - 1er  (Vainqueur Grande Finale) : Score 0.0
-        - 2ème (Perdant Grande Finale)   : Score 1.0
-        - 3ème (Vainqueur Petite Finale) : Score 2.0
-        - 4ème (Perdant Petite Finale)   : Score 3.0
-        - Autres tours (ex: Quart de finale) : Score de base + 0.9 (ex: 4.9)
+        Ce système permet de séparer le vainqueur du perdant d'un même match.
+        Le gagnant d'une finale obtient 0.0 (1er), le perdant 1.0 (2e).
+
+        Parameters
+        ----------
+        nom_du_tour : str
+            L'appellation textuelle du tour (ex: "Final", "Bronze Medal Match").
+        est_gagnant : bool
+            Indique si le participant a remporté cette rencontre précise.
+        poids_de_base : int
+            La valeur de base du tour issue de la configuration JSON.
+
+        Returns
+        -------
+        float
+            La note de classement finale pour cette performance.
         """
         texte_tour = nom_du_tour.lower()
 
@@ -126,6 +193,7 @@ class RankingEngine:
         if est_petite_finale:
             return 2.0 if est_gagnant else 3.0
 
-        # Pour un tour normal (ex: RO16, Quarter Final), les perdants sont éliminés à ce stade.
-        # On leur donne le poids du tour + 0.9 pour les classer juste après les qualifiés.
+        # Pénalité sous forme de décimal pour un perdant dans un tour classique.
+        # Cela garantit qu'il soit classé derrière tous ceux ayant gagné ce
+        # même tour, mais devant ceux éliminés au tour précédent.
         return float(poids_de_base) + 0.9

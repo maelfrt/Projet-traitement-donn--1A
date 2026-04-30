@@ -1,15 +1,42 @@
 from datetime import UTC, datetime
 from typing import Any
 
-import pandas as pd
-
 from .personne import Personne
 
 
 class Athlete(Personne):
     """
-    Objet représentant un athlète complet.
-    Hérite de Personne (et donc de Participant) pour la gestion de l'identité.
+    Objet représentant un athlète et ses caractéristiques physiques.
+    Hérite de la classe Personne pour les informations d'identité de base.
+
+    Parameters
+    ----------
+    nom : str
+        Le nom de famille de l'athlète.
+    prenom : str | None
+        Le prénom de l'athlète.
+    id_personne : str | None
+        L'identifiant unique utilisé pour le suivi technique.
+    provenance : str | None
+        Le pays ou la région d'origine.
+    pseudo : str | None
+        Nom d'usage ou pseudonyme (courant en E-sport).
+    genre : str | None
+        Le genre de l'athlète.
+    role : str | None
+        La position ou le rôle dans le sport (ex: Gardien, Pivot).
+    date_naissance : datetime | str | None
+        La date de naissance (format objet datetime ou texte YYYY-MM-DD).
+    lieu_naissance : str | None
+        Lieu de naissance de l'athlète.
+    equipe_actuelle : str | None
+        Le club ou l'équipe d'appartenance actuelle.
+    taille : float | None
+        La taille de l'athlète en centimètres.
+    poids : float | None
+        Le poids de l'athlète en kilogrammes.
+    **kwargs : Any
+        Permet de recevoir d'autres données spécifiques sans bloquer le code.
     """
 
     def __init__(
@@ -21,7 +48,7 @@ class Athlete(Personne):
         pseudo: str | None = None,
         genre: str | None = None,
         role: str | None = None,
-        date_naissance: datetime | None = None,
+        date_naissance: datetime | str | None = None,
         lieu_naissance: str | None = None,
         equipe_actuelle: str | None = None,
         taille: float | None = None,
@@ -40,57 +67,75 @@ class Athlete(Personne):
             lieu_naissance=lieu_naissance,
             **kwargs,
         )
-        self.taille = taille  # en cm
-        self.poids = poids  # en kg
+        self.taille = taille
+        self.poids = poids
         self.equipe_actuelle = equipe_actuelle
 
     def age(self) -> int | None:
-        """Calcule l'âge de l'athlète à partir de sa date de naissance."""
-        if not self.date_naissance or str(self.date_naissance).lower() in ["nan", "none", ""]:
+        """
+        Calcule l'âge actuel de l'athlète de manière précise.
+
+        Renvoie
+        -------
+        int | None
+            L'âge calculé en années, ou None si la date est inconnue.
+        """
+        if not self.date_naissance:
             return None
 
         try:
-            # Nettoyage et conversion
-            date_str = str(self.date_naissance).strip().removesuffix(".0")
-            date_obj = pd.to_datetime(date_str)
-
+            naissance = self.date_naissance.date()
             aujourdhui = datetime.now(UTC).date()
 
-            naissance = date_obj.date()
+            # Calcul de la différence d'années
+            age_calcule = aujourdhui.year - naissance.year
 
-            # Calcul de l'âge (ajuste si l'anniversaire n'est pas encore passé cette année)
-            return (
-                aujourdhui.year
-                - naissance.year
-                - ((aujourdhui.month, aujourdhui.day) < (naissance.month, naissance.day))
-            )
+            # On vérifie si l'anniversaire est déjà passé cette année
+            anniversaire_passe = (aujourdhui.month, aujourdhui.day) >= (naissance.month, naissance.day)
+
+            return age_calcule if anniversaire_passe else age_calcule - 1
+
         except (ValueError, TypeError, AttributeError):
             return None
 
     def calculer_imc(self) -> float | None:
-        """Calcule l'Indice de Masse Corporelle (sécurisé contre les mauvaises données)."""
-        if not self.taille or not self.poids or pd.isna(self.taille) or pd.isna(self.poids):
+        """
+        Calcule l'Indice de Masse Corporelle (IMC) à partir du poids et de la taille.
+
+        Renvoie
+        -------
+        float | None
+            L'IMC arrondi (1 décimale), ou None si les mesures sont absentes.
+        """
+        if self.taille is None or self.poids is None:
             return None
 
         try:
-            taille_num = float(self.taille)
-            poids_num = float(self.poids)
+            poids_val = float(self.poids)
+            taille_val = float(self.taille)
 
-            if taille_num <= 0 or poids_num <= 0:
+            if taille_val <= 0 or poids_val <= 0:
                 return None
-            if taille_num > 3.0:
-                taille_num = taille_num / 100.0
 
-            imc = poids_num / (taille_num**2)
+            # Si la taille est en cm (ex: 180), on la convertit en mètres (1.80)
+            taille_m = taille_val / 100.0 if taille_val > 3.0 else taille_val
+
+            # Formule : poids / taille au carré
+            imc = poids_val / (taille_m**2)
+
             return round(imc, 1)
 
         except (ValueError, TypeError):
             return None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """
-        Convertit l'objet en dictionnaire pour Pandas.
-        On utilise self.id (hérité de Participant) pour la cohérence.
+        Transforme l'athlète en dictionnaire pour l'affichage ou l'export.
+
+        Renvoie
+        -------
+        dict[str, Any]
+            Dictionnaire contenant les caractéristiques clés de l'athlète.
         """
         return {
             "id_participant": self.id,
@@ -107,5 +152,5 @@ class Athlete(Personne):
         }
 
     def __str__(self) -> str:
-        info_provenance = f" ({self.provenance})" if self.provenance else ""
-        return f"Athlète : {self.nom}{info_provenance} - ID: {self.id}"
+        prov = f" ({self.provenance})" if self.provenance else ""
+        return f"Athlète : {self.nom}{prov} - ID: {self.id}"

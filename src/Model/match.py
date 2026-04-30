@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from .performance import Performance
@@ -6,26 +6,29 @@ from .performance import Performance
 
 class Match:
     """
-    Définition d'un match regroupant les performances des participants.
+    Représente une rencontre sportive entre plusieurs participants.
+    Cette classe centralise les informations de contexte (date, lieu) et les résultats.
 
     Parameters
     ----------
-    id_match : str
-        clés primaires permettant de différentier les équipes
-    date : str
-        date à laquelle le match a lieu
-    lieu : str
-        lieu ou se tiendra le match
-    type_match : str
-        état d'avancement du match dans le tournoi (finale, demi-finale, quart-finale...)
-    patch : str
-        version des règles utilisées par la compétition
-    surface : str
-        type de matériaux utilisés pour la surface du match(herbe, terre battue, dure...)
-    performance : str
-        ensemble des données disponibles pour le match
-    vaiqueur : str
-        correspond au vainqueur du match si il y en a un
+    date : datetime | str | None
+        La date de la rencontre.
+    id_match : str | None
+        L'identifiant unique du match.
+    lieu : str | None
+        L'endroit où se joue le match.
+    type_match : str | None
+        La phase (ex: "Demi-finale").
+    patch : str | None
+        La version logicielle (E-sport).
+    surface : str | None
+        Le type de terrain (Tennis, Foot).
+    niveau_tournoi : str | None
+        La catégorie du tournoi.
+    format_sets : str | None
+        Le format de score (ex: "Best of 5").
+    **kwargs : Any
+        Données complémentaires spécifiques au sport.
     """
 
     def __init__(
@@ -40,14 +43,21 @@ class Match:
         format_sets: str | None = None,
         **kwargs: Any,
     ) -> None:
-        self.id_match = str(id_match) if id_match else "ID_A_DEFINIR"
+        # On s'assure que l'ID est toujours une chaîne de caractères pour éviter les erreurs de type
+        self.id_match: str = str(id_match) if id_match else "ID_A_DEFINIR"
 
-        self.date: datetime | str | None = date
+        self.date_objet: datetime | None = None
 
-        date_str = str(date).strip()
-        if len(date_str) == 8 and date_str.isdigit():
-            # On reformate proprement la date avec des tirets (YYYY-MM-DD)
-            self.date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+        if isinstance(date, datetime):
+            self.date_objet = date
+        elif isinstance(date, str):
+            try:
+                # Nettoyage de la chaîne pour ne garder que la date YYYY-MM-DD
+                date_pure = date.strip().split(" ")[0]
+                # On crée un objet datetime conscient du fuseau horaire (UTC)
+                self.date_objet = datetime.strptime(date_pure, "%Y-%m-%d").replace(tzinfo=UTC)
+            except (ValueError, IndexError):
+                self.date_objet = None
 
         self.lieu = lieu
         self.type_match = type_match
@@ -55,60 +65,102 @@ class Match:
         self.surface = surface
         self.niveau_tournoi = niveau_tournoi
         self.format_sets = format_sets
-        self.infos_supplementaires: dict[str, Any] = kwargs
+        self.infos_supplementaires = kwargs
 
-        # Dictionnaire stockant les objets Performance par rôle (ex: "Vainqueur", "Equipe 1")
+        # Stockage des performances (lien entre le match et les athlètes/équipes)
         self.performances: dict[str, Performance] = {}
 
     def ajouter_performance(self, role: str, performance: Performance) -> None:
-        """Ajoute une performance connectée au match."""
+        """
+        Enregistre le résultat et les statistiques d'un participant pour ce match.
+        """
         self.performances[role] = performance
 
     def renvoyer_gagnant(self) -> str:
         """
-        Détermine le gagnant en utilisant l'objet Participant stocké dans la performance.
-        Retourne le nom réel du vainqueur.
+        Analyse les performances pour identifier le vainqueur.
+
+        Renvoie
+        -------
+        str
+            Nom du gagnant ou message d'attente.
         """
         if not self.performances:
-            return "En attente de résultats"
+            return "Résultat non saisi"
 
         for role, perf in self.performances.items():
             if perf.est_gagnant:
-                # On accède directement au nom de l'objet (Athlete ou Equipe)
                 return f"{perf.participant.nom} ({role})"
 
         return "Match nul"
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Convertit le match en dictionnaire plat pour Pandas.
-        Aplatit les performances pour inclure participants et statistiques.
+        Transforme l'objet Match en dictionnaire.
+        C'est essentiel pour que Pandas puisse ensuite l'afficher ou l'exporter en CSV.
+
+        Renvoie
+        -------
+        dict[str, Any]
+            Les données du match et des performances fusionnées.
         """
-        data: dict[str, Any] = {
+        # On prépare les infos de base
+        donnees: dict[str, Any] = {
             "id_match": self.id_match,
-            "date": self.date,
+            "date": self.date_objet.strftime("%Y-%m-%d") if self.date_objet else "Date inconnue",
             "lieu": self.lieu,
             "type_match": self.type_match,
             "surface": self.surface,
             "resultat_final": self.renvoyer_gagnant(),
         }
 
+        # On parcourt chaque performance pour ajouter ses colonnes au dictionnaire
         for role, perf in self.performances.items():
-            # On crée des colonnes préfixées par le rôle (ex: Domicile_nom, Domicile_buts)
-            prefix = str(role).replace(" ", "_").lower()
+            # On normalise le nom du rôle pour en faire une clé de dictionnaire propre
+            prefixe = str(role).replace(" ", "_").lower()
 
-            data[f"{prefix}_nom"] = perf.participant.nom
-            data[f"{prefix}_id"] = perf.participant.id
-            data[f"{prefix}_est_gagnant"] = perf.est_gagnant
+            donnees[f"{prefixe}_nom"] = perf.participant.nom
+            donnees[f"{prefixe}_id"] = perf.participant.id
+            donnees[f"{prefixe}_est_gagnant"] = perf.est_gagnant
 
+            # On ajoute les statistiques détaillées (points, buts, etc.)
             for stat_nom, stat_valeur in perf.stats.items():
-                data[f"{prefix}_{stat_nom}"] = stat_valeur
+                donnees[f"{prefixe}_{stat_nom}"] = stat_valeur
 
-        if hasattr(self, "infos_supplementaires"):
-            data.update(self.infos_supplementaires)
+        # Ajout des données bonus si elles existent
+        if self.infos_supplementaires:
+            donnees.update(self.infos_supplementaires)
 
-        return data
+        return donnees
 
     def __str__(self) -> str:
-        info_lieu = f" à {self.lieu}" if self.lieu else ""
-        return f"Match {self.id_match} ({self.date}){info_lieu} | Vainqueur : {self.renvoyer_gagnant()}"
+        """
+        Définit comment un match s'affiche lorsqu'on utilise print().
+        Format attendu : [YYYY/MM/DD] Equipe A vs Equipe B | 🏆 Gagnant (Rôle)
+        """
+        # Formatage de la date
+        if self.date_objet:
+            date_str = self.date_objet.strftime("%Y/%m/%d")
+        else:
+            date_str = "Date inconnue"
+
+        # Récupération des participants et du gagnant
+        participants = []
+        vainqueur_str = "Match nul / Non joué"
+
+        for role, perf in self.performances.items():
+            nom = str(perf.participant.nom)
+            participants.append(nom)
+
+            if perf.est_gagnant:
+                vainqueur_str = f"{nom} ({role.capitalize()})"
+
+        # Création du texte "Equipe A vs Equipe B"
+        if len(participants) >= 2:
+            affiche = f"{participants[0]} vs {participants[1]}"
+        elif len(participants) == 1:
+            affiche = f"{participants[0]} vs Adversaire inconnu"
+        else:
+            affiche = "Match sans participants"
+
+        return f"[{date_str}] {affiche} | 🏆 {vainqueur_str}"

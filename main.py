@@ -1,85 +1,62 @@
 import sys
 
-from src.Analysis.statistiques import calculer_statistiques_globales
 from src.Core.app_controller import AppController
-from src.UI.affichage import afficher_a_propos, afficher_en_tete, afficher_statistiques_globales
+from src.UI.affichage import afficher_en_tete
 from src.UI.menus import (
     afficher_menu_principal,
+    executer_action_menu,
     lister_configurations_disponibles,
-    menu_administration,
-    menu_competition,
-    menu_graphiques,
-    menu_recherche_profil,
     selectionner_role,
     selectionner_sport,
 )
 
 
 def main() -> None:
-    """Point d'entrée principal de l'application."""
+    """
+    Point d'entrée principal de l'application.
+    Gère la boucle d'exécution globale et l'initialisation du programme.
+    """
     afficher_en_tete()
 
+    # Définition des droits d'accès (Admin ou Spectateur)
     role_utilisateur = selectionner_role()
+
+    # Initialisation du contrôleur (qui gèrera toutes les données)
     controller = AppController()
     configs = lister_configurations_disponibles()
 
+    # Boucle principale de l'application
     while True:
+        # Sélection de la base de données (le fichier JSON du sport)
         config_choisie = selectionner_sport(configs)
 
+        # Si l'utilisateur choisit l'option de sortie (0)
         if not config_choisie:
-            print("\nArrêt du programme. Fin de session.")
-            sys.exit()
+            print("\nFermeture du gestionnaire sportif. À bientôt !")
+            sys.exit(0)
 
         try:
-            print("\nTraitement des données en cours...")
+            # Demande au contrôleur de charger les CSV et de calculer les classements
+            print("\nChargement et traitement des données en cours...")
             controller.executer_chargement_complet(config_choisie)
-            competition = controller.obtenir_resultats()
 
-            if not competition:
-                print("Erreur : Impossible de charger les résultats.")
-                continue
+            # Boucle du menu pour le sport actuellement chargé
+            rester_sur_ce_sport = True
+            while rester_sur_ce_sport:
+                # Affichage des choix possibles
+                choix_menu = afficher_menu_principal(role_utilisateur, controller)
 
-            while True:
-                choix_menu = afficher_menu_principal(role_utilisateur)
+                # On délègue l'exécution à notre fichier menus.py.
+                # Si l'utilisateur choisit '8' (Changer de sport), la fonction renvoie False
+                # ce qui casse la boucle "while" et nous ramène au choix du sport.
+                rester_sur_ce_sport = executer_action_menu(choix_menu, controller, role_utilisateur)
 
-                if choix_menu == "1":
-                    menu_recherche_profil(controller)
-
-                elif choix_menu == "2":
-                    menu_competition(competition)
-
-                elif choix_menu == "3":
-                    toutes_entites = controller.obtenir_tous_les_participants()
-
-                    print("\nAnalyse des données en cours...")
-                    resultats_stats = calculer_statistiques_globales(competition, toutes_entites)
-                    afficher_statistiques_globales(resultats_stats)
-                    input("\nAppuyez sur Entrée pour retourner au menu principal...")
-
-                elif choix_menu == "4":
-                    menu_graphiques(controller, competition)
-
-                elif choix_menu == "5" and role_utilisateur == "admin":
-                    menu_administration(controller, competition)
-
-                elif choix_menu == "8":
-                    print("\nRetour à la sélection des sports...")
-                    break
-
-                elif choix_menu == "9":
-                    afficher_a_propos()
-                    input("\nAppuyez sur Entrée pour retourner au menu principal...")
-
-                elif choix_menu == "0":
-                    print("\nFermeture des modules. Fin du programme.")
-                    sys.exit()
-
-                else:
-                    print("Choix invalide. Veuillez réessayer.")
-
-        except OSError as e:
-            print(f"\nUne erreur critique est survenue : {e}")
+        except OSError as erreur:
+            # Rattrapage d'erreur propre si un fichier CSV ou JSON est manquant/corrompu
+            print(f"\n[Erreur Système] Impossible de lire les fichiers de données : {erreur}")
+            print("Veuillez vérifier que vos fichiers sont bien présents dans le dossier.")
 
 
+# Condition standard en Python pour exécuter le programme
 if __name__ == "__main__":
     main()

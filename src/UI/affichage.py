@@ -1,3 +1,6 @@
+from typing import Any
+
+from src.Infrastructure.data_loader import DataLoader
 from src.Model.athlete import Athlete
 from src.Model.competition import Competition
 from src.Model.equipe import Equipe
@@ -5,123 +8,38 @@ from src.Model.match import Match
 
 
 def afficher_en_tete() -> None:
-    """Affiche le titre institutionnel de l'application."""
-    print("-" * 60)
-    print("APPLICATION DE TRAITEMENT DES DONNÉES SPORTIVES")
-    print("-" * 60)
+    """
+    Affiche la bannière d'accueil.
+    """
+    print("\n" + "═" * 60)
+    titre = "APPLICATION DE TRAITEMENT DES DONNÉES SPORTIVES"
+    print(f"{titre:^60}")
+    print("═" * 60)
 
 
-def afficher_resultats_competition(competition: Competition, niveau: int = 0) -> None:
-    """Affiche l'arborescence des résultats et classements de manière récursive."""
-    marge = "    " * niveau
-    separateur = ">>> " if niveau == 0 else "  > "
+def afficher_profil(partcipant: Any, palmares: list[str], moyennes: dict[str, float] | None = None) -> None:
+    """
+    Affiche la fiche biographique d'un participant.
 
-    print(f"\n{marge}{separateur}COMPÉTITION : {competition.nom.upper()}")
+    Parameters
+    ----------
+    partcipant : Any
+        L'objet Participant (Athlete ou Equipe) à afficher.
+    palmares : list[str]
+        Liste des titres officiels gagnés.
+    moyennes : dict[str, float], optional
+        Dictionnaire des statistiques moyennes par match du participant.
+    """
+    print("\n" + "=" * 50)
+    titre = f"FICHE PROFIL : {str(partcipant.nom).upper()}"
+    print(f"{titre:^50}")
+    print("=" * 50)
 
-    if competition.classement_final:
-        print(f"{marge}{'=' * 40}")
-        for i, rang in enumerate(competition.classement_final, 1):
-            if "victoires" in rang:
-                label_score = "victoires"
-            else:
-                label_score = ""
-            valeur_score = rang.get("victoires") if "victoires" in rang else rang.get("tour_atteint")
+    type_str = "Équipe" if isinstance(partcipant, Equipe) else "Joueur"
+    print(f"{'Type'.ljust(15)} : {type_str}")
 
-            print(f"{marge}{i:2d}. {rang['nom']:<25} | {valeur_score} {label_score}")
-    else:
-        print(f"{marge}Information : Aucun classement calculé à ce niveau.")
-
-    for sous_comp in competition.sous_competitions.values():
-        afficher_resultats_competition(sous_comp, niveau + 1)
-
-
-def afficher_details_match(match: Match) -> None:
-    """Affiche le rapport détaillé d'un match avec les stats de chaque participant."""
-    print("\n" + "=" * 60)
-
-    noms_participants = [perf.participant.nom for perf in match.performances.values()]
-    if len(noms_participants) == 2:
-        titre = f"{noms_participants[0]} vs {noms_participants[1]}"
-    elif len(noms_participants) > 2:
-        titre = f"Match multi-participants ({len(noms_participants)} inscrits)"
-    else:
-        titre = "Détails de la rencontre"
-
-    print(f"   RAPPORT DE MATCH : {titre}")
-
-    date_propre = (
-        str(match.date).split()[0].replace("-", "/") if match.date and str(match.date).lower() != "none" else "N/A"
-    )
-    print(f"   Date : {date_propre} | Lieu : {match.lieu or 'N/A'}")
-
-    infos_extras = []
-
-    attributs_natifs = {
-        "type_match": "Phase/Tour",
-        "niveau_tournoi": "Niveau",
-        "surface": "Surface",
-        "format_sets": "Format",
-        "patch": "Patch",
-    }
-    for attr, label in attributs_natifs.items():
-        valeur = getattr(match, attr, None)
-        if valeur is not None and str(valeur).strip().lower() not in ["nan", "none", ""]:
-            infos_extras.append(f"{label} : {valeur}")
-
-    if hasattr(match, "infos_supplementaires"):
-        for cle, valeur in match.infos_supplementaires.items():
-            if valeur is not None and str(valeur).strip().lower() not in ["nan", "none", ""]:
-                cle_formatee = cle.replace("_", " ").capitalize()
-                infos_extras.append(f"{cle_formatee} : {valeur}")
-
-    if infos_extras:
-        print("-" * 30)
-        for info in infos_extras:
-            print(f"   - {info}")
-
-    print("=" * 60)
-
-    if not match.performances:
-        print("Aucune donnée de performance disponible pour ce match.")
-    else:
-        for role, perf in match.performances.items():
-            prefixe = "🏆 [GAGNANT]" if perf.est_gagnant else "🥈 [PERDANT]"
-            print(f"\n{prefixe} {role} : {perf.participant.nom}")
-            print("-" * 30)
-
-            if not perf.stats:
-                print("   (Aucune statistique détaillée)")
-            else:
-                for cle, valeur in perf.stats.items():
-                    cle_nom = cle.replace("_", " ").capitalize()
-                    valeur_str = f"{valeur:.1f}" if isinstance(valeur, float) else str(valeur)
-                    print(f"   - {cle_nom:25} : {valeur_str}")
-
-
-def afficher_profil(entite, competition: Competition | None) -> list:
-    """Affiche un tableau de bord exhaustif et dynamique d'une Équipe ou d'un Joueur."""
-
-    def est_valide(valeur) -> bool:
-        if valeur is None:
-            return False
-        return not (isinstance(valeur, str) and valeur.strip().lower() in ["nan", "none", "", "aucun", "inconnu"])
-
-    def obtenir_valeur(obj, cle):
-        val = getattr(obj, cle, None)
-        if val is not None:
-            return val
-        if hasattr(obj, "donnees_complementaires"):
-            return obj.donnees_complementaires.get(cle, None)
-        return None
-
-    print("\n" + "=" * 55)
-    print(f"   FICHE PROFIL : {entite.nom.upper()}")
-    print("=" * 55)
-
-    type_str = "Équipe" if isinstance(entite, Equipe) else "Joueur"
-    print(f"Type       : {type_str}")
-
-    attributs_a_tester = {
+    # Les attributs de base qu'on veut toujours afficher s'ils existent
+    attributs_visibles = {
         "provenance": "Provenance",
         "equipe_actuelle": "Équipe",
         "role": "Rôle / Poste",
@@ -132,286 +50,388 @@ def afficher_profil(entite, competition: Competition | None) -> list:
         "main_dominante": "Latéralité",
     }
 
-    for attr, label in attributs_a_tester.items():
-        val = obtenir_valeur(entite, attr)
-        if est_valide(val):
-            print(f"{label:11} : {val}")
+    for attr, label in attributs_visibles.items():
+        val = getattr(partcipant, attr, None)
+        # On utilise la fonction de validation qui existe déjà dans le DataLoader
+        if DataLoader._est_valeur_valide(val):
+            print(f"{label.ljust(15)} : {val}")
 
-    # Cas particuliers (Âge et Gabarit)
-    if isinstance(entite, Athlete):
-        age_val = entite.age()
-        if est_valide(age_val):
-            print(f"Âge         : {age_val} ans")
+    # Spécifique Athlète (Âge, IMC, etc.)
+    if isinstance(partcipant, Athlete):
+        age = partcipant.age()
+        if DataLoader._est_valeur_valide(age):
+            print(f"{'Âge'.ljust(15)} : {age} ans")
 
-        taille_val = entite.taille
-        poids_val = entite.poids
+        gabarit = []
+        taille = getattr(partcipant, "taille", None)
+        poids = getattr(partcipant, "poids", None)
 
-        if est_valide(taille_val) or est_valide(poids_val):
-            elements_gabarit = []
-            if taille_val is not None and est_valide(taille_val):
-                elements_gabarit.append(f"{float(taille_val):.0f} cm")
-            if poids_val is not None and est_valide(poids_val):
-                elements_gabarit.append(f"{poids_val} kg")
+        if DataLoader._est_valeur_valide(taille):
+            gabarit.append(f"{float(str(taille)):.0f} cm")
+        if DataLoader._est_valeur_valide(poids):
+            gabarit.append(f"{poids} kg")
 
-            print(f"Gabarit     : {' / '.join(elements_gabarit)}")
+        if gabarit:
+            print(f"{'Gabarit'.ljust(15)} : {' / '.join(gabarit)}")
 
-            imc = entite.calculer_imc()
-            if imc:
-                print(f"IMC         : {imc}")
+        imc = partcipant.calculer_imc() if hasattr(partcipant, "calculer_imc") else None
+        if imc:
+            print(f"{'IMC'.ljust(15)} : {imc}")
 
-    # AFFICHAGE DES DONNÉES "KWARGS" (Tout le reste du mapping JSON)
-    if hasattr(entite, "donnees_complementaires") and entite.donnees_complementaires:
-        extras = []
-        for cle, valeur in entite.donnees_complementaires.items():
-            if cle not in attributs_a_tester and est_valide(valeur):
-                cle_f = cle.replace("_", " ").capitalize()
-                extras.append(f"{cle_f:11} : {valeur}")
-
+    # Infos complémentaires (Les colonnes "bonus" du CSV)
+    if hasattr(partcipant, "donnees_complementaires") and partcipant.donnees_complementaires:
+        extras = {
+            k: v
+            for k, v in partcipant.donnees_complementaires.items()
+            if k not in attributs_visibles and DataLoader._est_valeur_valide(v)
+        }
         if extras:
             print("\n-- Infos Complémentaires --")
-            for info in extras:
-                print(info)
+            for cle, val in extras.items():
+                label = cle.replace("_", " ").capitalize()
+                print(f"{label.ljust(15)} : {val}")
 
-    # EFFECTIF (Pour les Équipes)
-    if isinstance(entite, Equipe) and entite.liste_athlete:
+    # Effectif (Si c'est une équipe)
+    if isinstance(partcipant, Equipe) and getattr(partcipant, "liste_athlete", None):
         print("\n-- Effectif --")
-        for joueur in entite.liste_athlete:
-            role_str = f" ({joueur.role})" if est_valide(joueur.role) else ""
-            print(f" - {joueur.nom}{role_str}")
+        for joueur in partcipant.liste_athlete:
+            role_str = f" ({joueur.role})" if DataLoader._est_valeur_valide(getattr(joueur, "role", None)) else ""
+            print(f"  • {joueur.nom}{role_str}")
 
-    # ==============================
-    # PALMARÈS & TITRES
-    # ==============================
-    if competition:
+    # Affichage des moyennes
+    if moyennes:
+        print("\n-- Moyennes de Performance (par match) --")
+        for stat, valeur in moyennes.items():
+            nom_propre = stat.replace("_", " ").capitalize()
+            print(f"  • {nom_propre.ljust(20)} : {valeur}")
 
-        def _recuperer_trophees(entite_cible, comp: Competition) -> list[str]:
-            trophees_trouves = []
-
-            # Si le tournoi a un classement calculé
-            if comp.classement_final and len(comp.classement_final) > 0:
-                premier = comp.classement_final[0]
-                nom_premier = str(premier.get("nom", "")).strip()
-
-                # Le participant a-t-il gagné ? (Lui-même, ou son équipe)
-                nom_gagnant = nom_premier.lower()
-
-                noms_valides = [str(entite_cible.nom).lower().strip()]
-
-                equipe = getattr(entite_cible, "equipe_actuelle", None)
-                if equipe:
-                    noms_valides.append(str(equipe).lower().strip())
-
-                a_gagne = nom_gagnant in noms_valides
-
-                # S'il est premier, on personnalise l'affichage selon le nom du bloc
-                if a_gagne:
-                    nom_actuel = comp.nom.upper()
-                    nom_global = competition.nom.upper()
-
-                    # Si c'est le tournoi principal
-                    if nom_actuel == "TABLEAU PRINCIPAL" or nom_actuel == nom_global:
-                        trophees_trouves.append(f"🏆 Vainqueur : {nom_global}")
-
-                    # Si c'est une phase de poule ou un groupe
-                    elif str(comp.type_format).lower() == "championnat":
-                        victoires = premier.get("victoires", 0)
-                        trophees_trouves.append(f"🥇 1er de groupe/section : {nom_actuel} ({victoires}V)")
-
-                    # Pour les autres sous-tournois à élimination
-                    else:
-                        trophees_trouves.append(f"🥇 1er de phase : {nom_actuel}")
-
-            # Recherche récursive dans les sous-tournois (Poules, Stages...)
-            for sous_comp in comp.sous_competitions.values():
-                trophees_trouves.extend(_recuperer_trophees(entite_cible, sous_comp))
-
-            return trophees_trouves
-
-        # Exécution de la recherche
-        liste_trophees = _recuperer_trophees(entite, competition)
-
-        if liste_trophees:
-            print("\n-- Palmarès & Titres --")
-            for trophee in liste_trophees:
-                print(f" {trophee}")
-
-    # BILAN DES MATCHS
-    print("\n" + "-" * 55)
-    print("   BILAN & HISTORIQUE DES MATCHS")
-    print("-" * 55)
-
-    if not competition:
-        print("Aucune compétition chargée.")
-        return []
+    # Palmarès & Titres (Fournis par l'AppController, on a juste à les afficher)
+    print("\n-- Palmarès & Titres --")
+    if not palmares:
+        print("  Aucun titre pour le moment.")
     else:
-        tous_les_matchs = competition.obtenir_tous_les_matchs()
-        historique = []
-        victoires = 0
+        for titre in sorted(set(palmares)):
+            print(f"  {titre}")
+    print()
 
-        for match in tous_les_matchs:
-            for role, perf in match.performances.items():
-                match_valide = str(perf.participant.id) == str(entite.id)
 
-                if not match_valide and isinstance(entite, Athlete):
-                    if hasattr(perf, "joueurs_match") and perf.joueurs_match:
-                        for joueur in perf.joueurs_match:
-                            if str(joueur.id) == str(entite.id):
-                                match_valide = True
-                                break
-                    elif hasattr(perf.participant, "liste_athlete"):
-                        for joueur_equipe in perf.participant.liste_athlete:
-                            if str(joueur_equipe.id) == str(entite.id):
-                                match_valide = True
-                                break
+def afficher_bilan_historique(nom: str, stats: dict[str, Any], historique: list[dict[str, Any]]) -> None:
+    """
+    Affiche les performances passées et le taux de victoire.
 
-                if match_valide:
-                    historique.append((match, role, perf))
-                    if perf.est_gagnant:
-                        victoires += 1
+    Paramètres
+    ----------
+    nom : str
+        Nom du participant.
+    stats : dict
+        Dictionnaire des totaux calculés par l'AppController.
+    historique : list
+        Liste des derniers matchs formatés par l'AppController.
+    """
+    print(f"{'-' * 50}")
+    titre = "BILAN & HISTORIQUE DES MATCHS"
+    print(f"{titre:^50}")
+    print(f"{'-' * 50}\n")
 
-        total_matchs = len(historique)
-        if total_matchs == 0:
-            print("Aucun match enregistré pour ce participant.")
-            return []
+    total = stats.get("total", 0)
+
+    if total == 0:
+        print("Aucun match enregistré pour ce participant.")
+        return
+
+    victoires = stats.get("victoires", 0)
+    defaites = stats.get("defaites", total - victoires)
+    winrate = stats.get("winrate", 0.0)
+
+    # Affichage du bilan chiffré
+    print(f"{'Matchs joués'.ljust(12)} : {total}")
+    print(f"{'Victoires'.ljust(12)} : {victoires}")
+    print(f"{'Défaites'.ljust(12)} : {defaites}")
+    print(f"{'Winrate'.ljust(12)} : {winrate:.1f} %\n")
+
+    print("Historique récent :")
+    for i, match_data in enumerate(historique[:15], 1):
+        statut = "🏆 V" if match_data.get("gagne") else "🥈 D"
+
+        date_raw = match_data.get("date", "")
+        if DataLoader._est_valeur_valide(date_raw) and date_raw != "Date inconnue":
+            date_propre = f"{date_raw.replace('-', '/')} - "
         else:
-            winrate = (victoires / total_matchs) * 100
-            print(f"Matchs joués : {total_matchs:2d}")
-            print(f"Victoires    : {victoires:2d}")
-            print(f"Défaites     : {total_matchs - victoires:2d}")
-            print(f"Winrate      : {winrate:.1f} %\n")
+            date_propre = ""
 
-            historique.sort(key=lambda item: str(item[0].date), reverse=True)
+        adv = match_data.get("adversaire", "Inconnu")
 
-            print("Historique récent :")
-            matchs_visibles = historique[:15]
-
-            for i, (match, role, perf) in enumerate(matchs_visibles, 1):
-                statut = "🏆 V" if perf.est_gagnant else "❌ D"
-
-                if match.date and str(match.date).strip().lower() not in ["nan", "none", ""]:
-                    date_propre = f"{str(match.date).split()[0].replace('-', '/')} - "
-                else:
-                    date_propre = ""
-
-                nom_adversaire = "Adversaire inconnu"
-                for p in match.performances.values():
-                    if str(p.participant.id) != str(entite.id):
-                        nom_adversaire = p.participant.nom
-                        break
-
-                print(f"{i:2d}. {statut} | {date_propre}vs {nom_adversaire}")
-            return matchs_visibles
+        print(f"{i:2d}. {statut} | {date_propre}vs {adv}")
+    print()
 
 
-def afficher_statistiques_globales(stats: dict) -> None:
-    """Affiche le tableau de bord des records globaux du tournoi."""
+def afficher_resultats_competition(competition: Competition, moyennes: dict[str, float] | None = None) -> None:
+    """
+    Affiche le tableau de classement pour le niveau de compétition fourni.
+
+    La fonction se concentre sur une seule responsabilité : formater et
+    afficher les données du classement de l'objet passé en paramètre,
+    sans chercher à explorer l'arborescence des sous-groupes.
+
+    Parameters
+    ----------
+    competition : Competition
+        L'instance de la compétition (ou sous-compétition) dont on veut
+        afficher le tableau des scores.
+    moyennes : dict[str, float], optional
+        Moyennes globales constatées durant cette phase précise.
+
+    Returns
+    -------
+    None
+    """
+    print(f"\n🏆 CLASSEMENT : {competition.nom.upper()}")
+
+    if moyennes:
+        print("\n📊 Moyennes par participant sur cette phase :")
+        lignes = [f"{k.replace('_', ' ').capitalize()}: {v}" for k, v in moyennes.items()]
+        print(" | ".join(lignes))
+        print()
+
+    if competition.classement_final:
+        print(f"{'=' * 55}")
+        print(f"{'Rang':<6} | {'Nom':<25} | Score/Stats")
+        print(f"{'-' * 55}")
+
+        for i, rang in enumerate(competition.classement_final, 1):
+            # Extraction des données du classement
+            nom = rang.get("nom", "Inconnu")
+            nom_affiche = nom[:22] + "..." if len(nom) > 25 else nom
+
+            # Adaptation selon le mode de calcul (Championnat vs Élimination)
+            score = rang.get("victoires") if "victoires" in rang else rang.get("tour_atteint", "N/A")
+            label = "victoires" if "victoires" in rang else ""
+
+            print(f"{i:2d}.    | {nom_affiche:<25} | {score} {label}")
+    else:
+        print("Note : Classement en cours de calcul ou non disponible.")
+
+
+def afficher_details_match(match: Match) -> None:
+    """
+    Affiche les informations du match avec toutes les statistiques.
+
+    Paramètres
+    ----------
+    match : Match
+        L'objet contenant les informations de la rencontre.
+    """
+    print("\n" + "=" * 50)
+
+    # Génération de l'affiche (Les adversaires)
+    noms_participants = [perf.participant.nom for perf in match.performances.values()]
+    titre_affiche = " vs ".join(noms_participants) if noms_participants else "Participants inconnus"
+
+    print(f"{'RAPPORT DE MATCH :':^50}")
+    print("-" * 50)
+    print(f"{titre_affiche}")
+
+    # On récupère le véritable objet date et on le formate en YYYY/MM/DD
+    date_obj = getattr(match, "date_objet", None)
+    date_str = date_obj.strftime("%Y/%m/%d") if date_obj else "N/A"
+    lieu_str = getattr(match, "lieu", "N/A")
+    print(f"Date : {date_str} | Lieu : {lieu_str}")
+
+    print("-" * 50)
+
+    infos_extras = []
+
+    attributs_natifs = {
+        "type_match": "Phase/Tour",
+        "niveau_tournoi": "Niveau",
+        "surface": "Surface",
+        "format_sets": "Format",
+        "patch": "Patch",
+    }
+
+    for attr, label in attributs_natifs.items():
+        valeur = getattr(match, attr, None)
+        if valeur is not None and str(valeur).strip().lower() not in ["nan", "none", ""]:
+            infos_extras.append(f"{label} : {valeur}")
+
+    # Extraction des données spécifiques du JSON (Le dictionnaire infos_supplementaires)
+    if getattr(match, "infos_supplementaires", None):
+        for cle, valeur in match.infos_supplementaires.items():
+            if valeur is not None and str(valeur).strip().lower() not in ["nan", "none", ""]:
+                cle_formatee = str(cle).replace("_", " ").capitalize()
+                infos_extras.append(f"{cle_formatee} : {valeur}")
+
+    # Affichage final
+    if infos_extras:
+        for info in infos_extras:
+            print(f"  - {info}")
+
+    print("=" * 50)
+
+    # Affichage des performances individuelles ou collectives
+    for role, perf in match.performances.items():
+        embleme = "🏆 [GAGNANT]" if perf.est_gagnant else "🥈 [PERDANT]"
+        print(f"\n   {embleme} {role} : {perf.participant.nom}")
+
+        if not perf.stats:
+            print("   (Pas de statistiques enregistrées)")
+        else:
+            for cle, valeur in perf.stats.items():
+                nom_stat = cle.replace("_", " ").capitalize()
+                val_str = f"{valeur:.2f}" if isinstance(valeur, float) else str(valeur)
+                print(f"     • {nom_stat:20} : {val_str}")
+
+
+def afficher_face_a_face(p1: Any, p2: Any, stats_h2h: dict) -> None:
+    """
+    Affiche le bilan des confrontations directes entre deux entités.
+
+    Paramètres
+    ----------
+    p1 : Any
+        participant numéro 1.
+    p2 : Any
+        participant numéro 2.
+    stats_h2h : dict
+        Nombre de victoire du face à face.
+    """
     print("\n" + "=" * 55)
-    print("   📊 TABLEAU DE BORD : STATISTIQUES ET RECORDS")
+    print(f"{'⚔️  FACE-À-FACE  ⚔️':^55}")
     print("=" * 55)
 
-    print(f"Total des matchs enregistrés : {stats.get('total_matchs', 0)}")
+    # Affichage du score géant (ex: FEDERER  25 -- 15  NADAL)
+    print(f"\n{p1.nom:^25} VS {p2.nom:^25}")
+    print(f"{stats_h2h['victoires_p1']:^25} -- {stats_h2h['victoires_p2']:^25}")
+    print("-" * 55)
+    print(f"Total des confrontations directes : {stats_h2h['total']}")
 
-    if stats.get("total_equipes", 0) > 0:
-        print(f"Total des équipes inscrites  : {stats['total_equipes']}")
-    if stats.get("total_athletes", 0) > 0:
-        print(f"Total des joueurs inscrits   : {stats['total_athletes']}")
+    if stats_h2h["nuls"] > 0:
+        print(f"Matchs nuls : {stats_h2h['nuls']}")
 
+    if stats_h2h["total"] == 0:
+        print("\nCes deux participants ne se sont jamais affrontés.")
+        return
+
+    print("\nHISTORIQUE DES RENCONTRES :")
+    for i, match_info in enumerate(stats_h2h["historique"][:10], 1):
+        date = match_info["date"]
+        vainqueur = match_info["vainqueur"]
+
+        if vainqueur == p1.nom:
+            resultat = f"🏆 Victoire de {p1.nom}"
+        elif vainqueur == p2.nom:
+            resultat = f"🏆 Victoire de {p2.nom}"
+        else:
+            resultat = "🤝 Match nul"
+
+        print(f" {i:2d}. [{date}] {resultat}")
+
+    if stats_h2h["total"] > 10:
+        print(" ... (seuls les 10 derniers matchs sont affichés)")
+    print()
+
+
+def afficher_statistiques_globales(stats: dict[str, Any], moyennes_globales: dict[str, float] | None = None) -> None:
+    """
+    Affiche le tableau de bord complet (Records, Âge, Géo).
+    C'est ici que l'on valorise les données de provenance.
+
+    Paramètres
+    ----------
+    stats : dict
+        Dictionnaire de données compilées par le moteur de statistiques.
+    moyennes_globales : dict[str, float], optional
+        Moyennes de toutes les rencontres du sport actuellement chargé.
+    """
+    print("\n" + "=" * 55)
+    print(f"{'STATISTIQUES ET RECORDS':^55}")
+    print("=" * 55)
+
+    # Chiffres de participation
+    # On utilise ljust(28) pour aligner parfaitement les ":"
+    print(f"{'Total des matchs enregistrés'.ljust(28)} : {stats.get('total_matchs', 0)}")
+    print(f"{'Total des équipes inscrites'.ljust(28)} : {stats.get('total_equipes', 0)}")
+    print(f"{'Total des joueurs inscrits'.ljust(28)} : {stats.get('total_athletes', 0)}")
+
+    # Records sportifs
     print("\n--- 🏆 RECORDS DE PERFORMANCE ---")
     if "meilleur_winrate" in stats:
-        wr = stats["meilleur_winrate"]
-        print(f"Meilleur Winrate  : {wr['nom']} avec {wr['winrate']:.1f}% ({wr['joues']} matchs)")
-    else:
-        print("Meilleur Winrate  : Pas assez de matchs joués (min. 3) pour calculer un ratio pertinent.")
-
+        w = stats["meilleur_winrate"]
+        print(f"{'Meilleur Winrate'.ljust(18)} : {w['nom']} avec {w['winrate']:.1f}% ({w['joues']} matchs)")
     if "plus_actif" in stats:
-        pa = stats["plus_actif"]
-        print(f"Le plus actif     : {pa['nom']} avec {pa['joues']} matchs disputés.")
+        a = stats["plus_actif"]
+        print(f"{'Le plus actif'.ljust(18)} : {a['nom']} avec {a['joues']} matchs disputés.")
 
-    print("\n--- 👤 RECORDS DÉMOGRAPHIQUES ---")
-    if "plus_jeune" in stats and "plus_age" in stats:
-        print(f"Joueur le plus jeune : {stats['plus_jeune']['nom']} ({stats['plus_jeune']['age']} ans)")
-        print(f"Joueur le plus âgé   : {stats['plus_age']['nom']} ({stats['plus_age']['age']} ans)")
-    else:
-        print("Données d'âge insuffisantes ou non applicables pour ce sport.")
+    # Moyenne globale du tournoi
+    if moyennes_globales:
+        print("\n--- 📈 MOYENNES GLOBALES DU TOURNOI (par participant/match) ---")
+        for stat, valeur in moyennes_globales.items():
+            nom_propre = stat.replace("_", " ").capitalize()
+            print(f"{nom_propre.ljust(28)} : {valeur}")
 
-    print("\n--- 🌍 GÉOGRAPHIE & PROVENANCES ---")
-    if "top_provenances" in stats:
-        print("Nations/Régions les plus représentées :")
-        for i, (pays, compte) in enumerate(stats["top_provenances"], 1):
-            print(f"  {i}. {pays:<5} : {compte} représentant(s)")
-    else:
-        print("Aucune donnée de provenance valide pour ce tournoi.")
+    # Données démographiques
+    if "plus_jeune" in stats or "plus_age" in stats:
+        print("\n--- 👤 RECORDS DÉMOGRAPHIQUES ---")
+        if "plus_jeune" in stats:
+            j = stats["plus_jeune"]
+            print(f"{'Joueur le plus jeune'.ljust(21)} : {j['nom']} ({j['age']} ans)")
+        if "plus_age" in stats:
+            v = stats["plus_age"]
+            print(f"{'Joueur le plus âgé'.ljust(21)} : {v['nom']} ({v['age']} ans)")
 
-    if "meilleur_winrate_provenance" in stats:
-        mwp = stats["meilleur_winrate_provenance"]
-        print(f"\nNation la plus dominante : {mwp['pays']}")
-        print(f"  -> {mwp['winrate']:.0f}% de victoires (sur {mwp['joues']} matchs cumulés)")
-    else:
-        print("\nNation la plus dominante : Pas assez de données valides pour calculer cette statistique.")
+    # Analyse Géographique (Provenance)
+    if "top_provenances" in stats or "meilleur_winrate_provenance" in stats:
+        print("\n--- 🌍 GÉOGRAPHIE & PROVENANCES ---")
+
+        if "top_provenances" in stats:
+            print("Nations/Régions les plus représentées :")
+            for i, (nation, nb) in enumerate(stats["top_provenances"], 1):
+                print(f" {i}. {nation} : {nb} représentant(s)")
+
+        if "meilleur_winrate_provenance" in stats:
+            p = stats["meilleur_winrate_provenance"]
+            print(f"\nNation la plus dominante : {p['pays']}")
+            print(f" -> {p['winrate']:.0f}% de victoires (sur {p['joues']} matchs cumulés)")
 
 
 def afficher_a_propos() -> None:
-    """Affiche la page de présentation, les aides et l'architecture des fichiers."""
-    import pydoc
+    """
+    Affiche le manuel d'aide et les crédits de l'application.
 
-    texte_a_propos = """
-        ============================================================
-                        À propos / Fonctionnalités
-        ============================================================
-        Description : Système avancé de gestion de compétitions
-        ------------------------------------------------------------
+    Cette interface présente de manière claire les fonctionnalités,
+    les raccourcis, la flexibilité du système (architecture universelle)
+    et l'équipe de développement à l'origine du projet.
+    """
+    print("\n" + "=" * 65)
+    print(f"{'ℹ️  AIDE, INFORMATIONS ET CRÉDITS':^65}")
+    print("=" * 65)
 
-        PRÉSENTATION
-        Cette application a été conçue et développée en Python dans
-        le cadre d'un projet de groupe. L'objectif était de créer un
-        système complet et robuste de gestion de compétitions sportivee
-        en appliquant les meilleures pratiques de programmation.
+    print("\n L'APPLICATION EN BREF")
+    print("  • Objectif : Suivre et analyser n'importe quel tournoi sportif.")
+    print("  • Suivi    : Les classements s'actualisent automatiquement à chaque match.")
+    print("  • Analyse  : Consultez profils, statistiques moyennes et historiques.")
 
-        ARCHITECTURE ET ADAPTABILITÉ
-        Le système repose sur une architecture générique, pensée
-        pour gérer de multiples jeux de données sans avoir à
-        réécrire le cœur de l'application pour chaque nouveau sport.
+    print("\n UNE ARCHITECTURE UNIVERSELLE")
+    print("  • Flexibilité : Le système a été conçu pour s'adapter à chaque sport.")
+    print("  • Évolutivité : Grâce à de simples fichiers de configuration JSON, le")
+    print("                  programme interprète n'importe quel nouveau fichier")
+    print("                  de données sans aucune modification du code source.")
+    print("  • Multi-sport : Passez du Tennis, au Football ou à l'E-sport en un clic !")
 
-        Cette flexibilité repose sur les fichiers de configuration JSON
-        (dans le dossier "config"). Ces fichiers agissent comme des
-        traducteurs : ils expliquent au programme comment "mapper" les
-        colonnes d'un fichier CSV inconnu vers nos objets Python standards.
+    print("\n OÙ SONT MES DONNÉES ?")
+    print("  • Configurations : Le dossier 'configs' contient les règles des sports.")
+    print("  • Résultats      : Le dossier 'donnees' stocke les informations des matchs.")
+    print("  • Sauvegardes    : Accessibles via le menu [ADMIN] pour sauvegarder les modifications.")
 
-        CE QUE VOUS POUVEZ FAIRE
-        - Naviguer    : Changez de sport à tout moment depuis le menu.
-        - Rechercher  : Trouvez instantanément le profil complet
-                        d'un athlète ou d'une équipe.
-        - Consulter   : Lisez les classements d'une compétition,
-                        que ça soit un championnat ou un tournoi à
-                        élimination.
-        - Administrer : Ajoutez de nouveaux matchs, inscrivez des
-                        joueurs ou corrigez des erreurs passées.
+    print("\n RACCOURCIS UTILES")
+    print("  • [Entrée] : Valider une saisie ou passer à l'écran suivant.")
+    print("  • [0]      : Revenir en arrière (très utile en cas d'erreur de menu).")
+    print("  • [q]      : Fermer l'application proprement à n'importe quel moment.")
 
-        CONSEILS D'UTILISATION
-        - Navigation : Tapez simplement le numéro correspondant
-                        à votre choix et appuyez sur Entrée.
-        - Annulation : Dans presque tous les menus, tapez "0"
-                        pour faire un retour en arrière.
-                        Vous pouvez aussi appuyer sur "q" (ou "Q")
-                        pour quitter l'application à tout moment.
-        - Recherche  : Vous n'avez pas besoin de taper le nom
-                        complet d'un joueur, une partie suffit !
+    print("\n ÉQUIPE DE DÉVELOPPEMENT")
+    print("  • Kilian Crumbach")
+    print("  • Ryan Alves")
+    print("  • Mael Fretté")
+    print("  • Raphaëlle Belaygues")
 
-        ARCHITECTURE ET FICHIERS DE DONNÉES
-        Vos données sont stockées localement sur votre disque dur
-        dans le dossier "donnees".
-
-        Chaque sport possède son propre sous-dossier (ex: /football)
-        contenant les fichiers de données (au format CSV) :
-        - match.csv  : L'historique officiel de toutes les rencontres.
-        - player.csv : La base de données des athlètes.
-        - team.csv   : La base de données des équipes engagées.
-
-        NOTE POUR L'ADMIN :
-        Vos ajouts et modifications en mémoire ne seront inscrits
-        définitivement dans ces fichiers CSV que si vous utilisez
-        l'option "Sauvegarder" avant de quitter l'application !
-
-        ============================================================
-        """
-    pydoc.pager(texte_a_propos)
+    print("\n" + "=" * 65)

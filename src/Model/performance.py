@@ -5,37 +5,66 @@ from .participant import Participant
 
 class Performance:
     """
-    Objet faisant le lien entre un participant (Athlète ou Équipe) et un Match.
-    Contient l'objet Participant complet, le résultat et les statistiques.
+    Objet faisant le lien entre un participant et un match spécifique.
+    Il stocke le résultat (victoire/défaite) et toutes les statistiques
+    produites durant la rencontre.
+
+    Parameters
+    ----------
+    participant : Participant
+        L'objet Participant (Athlète ou Équipe) concerné.
+    role : str
+        Le rôle occupé lors du match (ex: "Domicile", "Vainqueur", "Equipe Bleue").
+    est_gagnant : bool
+        Indique si ce participant a remporté le match. Par défaut False.
+    stats : dict[str, Any] | None
+        Dictionnaire des statistiques chiffrées (buts, points, etc.).
     """
 
     def __init__(
         self, participant: Participant, role: str, est_gagnant: bool = False, stats: dict[str, Any] | None = None
     ) -> None:
-        self.participant: Participant = participant
-        self.role: str = role
-        self.est_gagnant: bool = est_gagnant
-        self.stats: dict[str, Any] = stats if stats is not None else {}
-        self.joueurs_match: list = []
+        self.participant = participant
+        self.role = role
+        self.est_gagnant = est_gagnant
+
+        # On s'assure que stats est toujours un dictionnaire pour éviter les erreurs de type
+        self.stats = stats if stats is not None else {}
+
+        # Cette liste est utilisée pour les sports d'équipe (ex: Football, LoL).
+        # Elle permet de lister les athlètes précis qui ont participé à cette performance collective.
+        self.joueurs_match: list[Participant] = []
 
     def ajouter_stat(self, cle: str, valeur: Any) -> None:
-        """Ajoute ou met à jour une statistique spécifique."""
+        """
+        Permet d'ajouter ou de mettre à jour manuellement une statistique.
+        """
         self.stats[cle] = valeur
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Convertit la performance en dictionnaire pour Pandas.
-        Pratique pour aplatir les données dans un DataFrame de résultats.
+        Convertit la performance en un dictionnaire.
+        C'est cette méthode qui est appelée par le Match pour construire
+        le tableau de données final (Dataframe ou CSV).
+
+        Renvoie
+        -------
+        dict[str, Any]
+            Dictionnaire contenant l'ID, le nom, le résultat et toutes les stats.
         """
-        base_dict = {
+        # On prépare les informations d'identité de base
+        resultat = {
             "id_participant": self.participant.id,
             "nom_participant": self.participant.nom,
             "role": self.role,
             "est_gagnant": self.est_gagnant,
         }
-        base_dict.update(self.stats)
-        return base_dict
+
+        # On fusionne avec le dictionnaire des statistiques chiffrées
+        resultat.update(self.stats)
+
+        return resultat
 
     def __str__(self) -> str:
-        resultat = "Victoire" if self.est_gagnant else "Défaite"
-        return f"Performance de {self.participant.nom} ({self.role}) - {resultat} - Stats: {list(self.stats.keys())}"
+        verdict = "Victoire" if self.est_gagnant else "Défaite"
+        return f"Performance de {self.participant.nom} ({self.role}) - {verdict}"

@@ -6,11 +6,31 @@ from .personne import Personne
 
 class Coach(Personne):
     """
-    Objet représentant un coach, héritant de Personne.
+    Objet représentant un entraîneur ou un membre du staff technique.
+    Hérite de Personne pour la gestion de l'identité et des informations de base.
 
-    Attributs supplémentaires :
+    Parameters
+    ----------
+    nom : str
+        Le nom de famille du coach.
+    prenom : str | None
+        Le prénom du coach.
+    id_personne : str | None
+        L'identifiant unique utilisé pour le suivi technique.
+    provenance : str | None
+        Le pays ou la région d'origine.
+    pseudo : str | None
+        Nom d'usage ou pseudonyme (courant en E-sport).
+    genre : str | None
+        Le genre du coach.
+    role : str | None
+        La position ou le rôle dans le sport.
+    date_naissance : datetime | str | None
+        La date de naissance (format objet datetime ou texte YYYY-MM-DD).
     specialite : str | None
-        le domaine d'expertise du coach (ex: "Tactique", "Mental")
+        Le domaine d'expertise spécifique (ex: "Tactique", "Mental").
+    **kwargs : Any
+        Permet de recevoir d'autres données spécifiques sans bloquer le code.
     """
 
     def __init__(
@@ -22,9 +42,9 @@ class Coach(Personne):
         pseudo: str | None = None,
         genre: str | None = None,
         role: str | None = None,
-        date_naissance: datetime | None = None,
+        date_naissance: datetime | str | None = None,
         specialite: str | None = None,
-        **kwargs: Any,  # Capture les arguments supplémentaires (comme equipe_actuelle)
+        **kwargs: Any,
     ) -> None:
         super().__init__(
             nom=nom,
@@ -40,7 +60,15 @@ class Coach(Personne):
         self.specialite = specialite
 
     def to_dict(self) -> dict[str, Any]:
-        """Convertit l'objet en dictionnaire pour Pandas."""
+        """
+        Transforme le coach en dictionnaire pour l'affichage ou l'export.
+
+
+        Renvoie
+        -------
+        dict[str, Any]
+            Dictionnaire contenant les caractéristiques du coach.
+        """
         return {
             "id_personne": self.id,
             "nom": self.nom,
