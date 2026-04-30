@@ -67,9 +67,26 @@ def afficher_profil(partcipant: Any, palmares: list[str], moyennes: dict[str, fl
         poids = getattr(partcipant, "poids", None)
 
         if DataLoader._est_valeur_valide(taille):
-            gabarit.append(f"{float(str(taille)):.0f} cm")
+            try:
+                # Si c'est un nombre classique (ex: 185 ou 185.0), on le formate proprement
+                taille_float = float(str(taille))
+                gabarit.append(f"{taille_float:.0f} cm")
+            except ValueError:
+                # Si c'est un format texte comme '6-6' (système impérial), on l'affiche tel quel
+                # On remplace le tiret par un apostrophe pour que ça ressemble à 6'6
+                taille_propre = str(taille).replace("-", "'")
+                gabarit.append(f'{taille_propre}"')
         if DataLoader._est_valeur_valide(poids):
-            gabarit.append(f"{poids} kg")
+            try:
+                poids_float = float(str(poids))
+                # Si le poids dépasse 150, on déduit qu'il est en système impérial
+                if poids_float > 150:
+                    gabarit.append(f"{poids_float:.0f} lbs")
+                else:
+                    gabarit.append(f"{poids_float:.0f} kg")
+            except ValueError:
+                # Si la donnée contient du texte imprévu, on l'affiche telle quelle
+                gabarit.append(f"{poids}")
 
         if gabarit:
             print(f"{'Gabarit'.ljust(15)} : {' / '.join(gabarit)}")
@@ -193,7 +210,7 @@ def afficher_resultats_competition(competition: Competition, moyennes: dict[str,
     -------
     None
     """
-    print(f"\n🏆 CLASSEMENT : {competition.nom.upper()}")
+    print(f"\n🏆 STATISTIQUES ET CLASSEMENT : {competition.nom.upper()}")
 
     if moyennes:
         print("\n📊 Moyennes par participant sur cette phase :")

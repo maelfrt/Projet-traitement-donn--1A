@@ -922,7 +922,7 @@ def _admin_gerer_match(controller: AppController) -> None:
     nom_recherche = demander_saisie("Entrez le nom d'un participant ayant joué le match : ")
 
     # Recherche du participant pour accéder à son historique
-    resultats = controller.rechercher_equipe(nom_recherche) + controller.rechercher_joueur(nom_recherche)
+    resultats = controller.rechercher_participants_par_nom(nom_recherche)
 
     if not resultats:
         print("❌ Aucun participant trouvé à ce nom.")
