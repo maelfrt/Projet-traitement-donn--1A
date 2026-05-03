@@ -1,7 +1,6 @@
 {
     "sport": "Football Champions League",
     "type_format": "elimination",
-    "cle_groupement": "group",
     "poids_rounds": {
         "RO2": 1,
         "RO4": 2,
