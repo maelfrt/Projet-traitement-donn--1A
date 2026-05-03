@@ -176,7 +176,7 @@ class DataLoader:
 
         # Le remplacement des balises Pandas par des valeurs nulles natives
         # Python garantit une instanciation propre des objets par la suite.
-        return df_principal.where(pd.notnull(df_principal), None)
+        return df_principal.where(pd.notnull(df_principal), None)  # type: ignore
 
     # =========================================================================
     # TRADUCTION DES LIGNES EN OBJETS
@@ -311,7 +311,7 @@ class DataLoader:
         config_role: dict,
         regle_victoire: dict,
         config_match_globale: dict,
-    ) -> bool:
+    ) -> tuple[bool, bool]:
         """
         Moteur de règles arbitrant le résultat d'une rencontre.
 
@@ -409,6 +409,7 @@ class DataLoader:
                     equipe_obj = self._annuaire_participants.get(nom_equipe)
                     if isinstance(equipe_obj, Equipe):
                         equipe_obj.ajouter_membre(participant)
+                        participant.equipe_actuelle = equipe_obj.nom
 
     def _indexer_participants_en_cache(self) -> None:
         """

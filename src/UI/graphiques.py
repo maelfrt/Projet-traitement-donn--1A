@@ -3,7 +3,7 @@ from typing import Any
 
 
 def generer_top_5_winrate(competition) -> None:
-    """Affiche le Top 5 des participants par taux de victoire (Format Rapport/Clair)."""
+    """Affiche le Top 5 des participants par taux de victoire."""
     import matplotlib.pyplot as plt
 
     bilan: dict[str, dict] = {}
@@ -19,7 +19,7 @@ def generer_top_5_winrate(competition) -> None:
             if perf.est_gagnant:
                 bilan[nom]["victoires"] += 1
 
-    # Filtrage (minimum 3 matchs)
+    # Filtrage (minimum 5 matchs)
     MIN_MATCHS = 5
     stats_winrate = []
     for nom, data in bilan.items():

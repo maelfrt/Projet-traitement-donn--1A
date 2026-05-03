@@ -259,7 +259,7 @@ def afficher_details_match(match: Match) -> None:
     # On récupère le véritable objet date et on le formate en YYYY/MM/DD
     date_obj = getattr(match, "date_objet", None)
     date_str = date_obj.strftime("%Y/%m/%d") if date_obj else "N/A"
-    lieu_str = getattr(match, "lieu", "N/A")
+    lieu_str = getattr(match, "lieu", None) or "N/A"
     print(f"Date : {date_str} | Lieu : {lieu_str}")
 
     print("-" * 50)
@@ -268,7 +268,7 @@ def afficher_details_match(match: Match) -> None:
 
     attributs_natifs = {
         "type_match": "Phase/Tour",
-        "niveau_tournoi": "Niveau",
+        "niveau_tournoi": "Compétition",
         "surface": "Surface",
         "format_sets": "Format",
         "patch": "Patch",

@@ -26,12 +26,12 @@ class RankingEngine:
         competition : Competition
             L'objet compétition dont les classements doivent être calculés.
         """
-        self._classer_un_niveau(competition)
+        self._classer_une_competition(competition)
 
         for sous_comp in competition.sous_competitions.values():
-            self._classer_un_niveau(sous_comp)
+            self._classer_une_competition(sous_comp)
 
-    def _classer_un_niveau(self, comp: Competition) -> None:
+    def _classer_une_competition(self, comp: Competition) -> None:
         """
         Aiguille le calcul du classement vers l'algorithme approprié.
 

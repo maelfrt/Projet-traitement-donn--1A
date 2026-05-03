@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import Any
 
 from src.Analysis.statistiques import calculer_statistiques_globales
 from src.Core.app_controller import AppController
@@ -584,7 +585,7 @@ def menu_graphiques(competition: Competition, controller: AppController) -> None
     # On cherche dans l'ensemble des matchs pour lister toutes les catégories
     # de statistiques existantes (buts, passes, kills, rebonds, etc.)
     tous_les_matchs = competition.obtenir_tous_les_matchs()
-    categories_stats_uniques = set()
+    categories_stats_uniques: set[str] = set()
 
     for match in tous_les_matchs:
         for performance in match.performances.values():
@@ -823,7 +824,7 @@ def _admin_saisir_resultat(controller: AppController) -> None:
                     print("❌ Saisie invalide.")
 
         # Collecte des statistiques chiffrées ou textuelles
-        statistiques_saisies = {}
+        statistiques_saisies: dict[str, Any] = {}
         for nom_stat, type_attendu in configuration_role["stats"].items():
             while True:
                 valeur_saisie = demander_saisie(f"Valeur pour '{nom_stat}' : ")
@@ -993,7 +994,7 @@ def _admin_gerer_match(controller: AppController) -> None:
             print("(Appuyez simplement sur Entrée pour conserver la valeur actuelle)")
 
             # Création du dictionnaire contenant uniquement les valeurs à modifier
-            valeur_modifications = {"stats": {}}
+            valeur_modifications: dict[str, Any] = {"stats": {}}
 
             for nom_stat, valeur_actuelle in performance_actuelle.stats.items():
                 nouvelle_valeur = demander_saisie(f"Nouvelle valeur pour '{nom_stat}' (actuel: {valeur_actuelle}) : ")

@@ -236,7 +236,7 @@ class AppController:
             "total": total,
             "victoires": victoires,
             "nuls": nuls,
-            "defaites": total - victoires,
+            "defaites": total - victoires - nuls,
             "winrate": (victoires / total) * 100,
         }
 
