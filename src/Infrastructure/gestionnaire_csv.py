@@ -5,9 +5,7 @@ import pandas as pd
 
 class GestionnaireCSV:
     """
-    Classe responsable de l'accès aux données (DAO).
-    Elle lit les fichiers CSV et standardise leurs colonnes grâce à un mapping,
-    sans jamais avoir besoin de connaître le sport traité.
+    "Gestionnaire de lecture et standardisation des fichiers CSV via mapping.
     """
 
     def __init__(self, dossier_source: str) -> None:

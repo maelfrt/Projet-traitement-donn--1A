@@ -52,7 +52,6 @@ def afficher_profil(partcipant: Any, palmares: list[str], moyennes: dict[str, fl
 
     for attr, label in attributs_visibles.items():
         val = getattr(partcipant, attr, None)
-        # On utilise la fonction de validation qui existe déjà dans le DataLoader
         if DataLoader._est_valeur_valide(val):
             print(f"{label.ljust(15)} : {val}")
 
@@ -122,7 +121,7 @@ def afficher_profil(partcipant: Any, palmares: list[str], moyennes: dict[str, fl
             nom_propre = stat.replace("_", " ").capitalize()
             print(f"  • {nom_propre.ljust(20)} : {valeur}")
 
-    # Palmarès & Titres (Fournis par l'AppController, on a juste à les afficher)
+    # Palmarès & Titres
     print("\n-- Palmarès & Titres --")
     if not palmares:
         print("  Aucun titre pour le moment.")
@@ -193,10 +192,6 @@ def afficher_bilan_historique(nom: str, stats: dict[str, Any], historique: list[
 def afficher_resultats_competition(competition: Competition, moyennes: dict[str, float] | None = None) -> None:
     """
     Affiche le tableau de classement pour le niveau de compétition fourni.
-
-    La fonction se concentre sur une seule responsabilité : formater et
-    afficher les données du classement de l'objet passé en paramètre,
-    sans chercher à explorer l'arborescence des sous-groupes.
 
     Parameters
     ----------
@@ -429,8 +424,7 @@ def afficher_a_propos() -> None:
     Affiche le manuel d'aide et les crédits de l'application.
 
     Cette interface présente de manière claire les fonctionnalités,
-    les raccourcis, la flexibilité du système (architecture universelle)
-    et l'équipe de développement à l'origine du projet.
+    les raccourcis et l'équipe de développement à l'origine du projet.
     """
     print("\n" + "=" * 65)
     print(f"{'ℹ️  AIDE, INFORMATIONS ET CRÉDITS':^65}")

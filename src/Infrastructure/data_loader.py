@@ -22,8 +22,7 @@ class DataLoader:
     configuration, puis transforme ces lignes de texte en véritables objets
     Python interconnectés au sein de la mémoire.
 
-    Choix d'architecture :
-    La bibliothèque Pandas est sollicitée exclusivement pour sa puissance
+    La bibliothèque Pandas est sollicitée exclusivement pour son efficacité
     lors de la fusion de tableaux. Dès que les données sont propres, elles
     sont instanciées en objets Python natifs pour garantir des temps de
     calcul et de recherche extrêmement rapides lors des analyses.
@@ -68,10 +67,6 @@ class DataLoader:
         if valeur is None:
             return False
         return str(valeur).strip().lower() not in ["", "nan", "none", "aucun", "inconnu"]
-
-    # =========================================================================
-    # ORCHESTRATION GLOBALE
-    # =========================================================================
 
     def initialiser_competition(self, nom_fichier_json: str) -> Competition:
         """
@@ -174,13 +169,7 @@ class DataLoader:
                     df_principal, df_joint, how="left", left_on=jointure["cle_source"], right_on=jointure["cle_cible"]
                 )
 
-        # Le remplacement des balises Pandas par des valeurs nulles natives
-        # Python garantit une instanciation propre des objets par la suite.
         return df_principal.where(pd.notnull(df_principal), None)  # type: ignore
-
-    # =========================================================================
-    # TRADUCTION DES LIGNES EN OBJETS
-    # =========================================================================
 
     def _charger_participants(self, config_fichier: dict, classe_cible: Any, nom_base: str) -> None:
         """
@@ -200,8 +189,6 @@ class DataLoader:
         if df_participants.empty:
             return
 
-        # L'utilisation d'une compréhension de liste couplée à un déballage
-        # de dictionnaire permet une création d'objets extrêmement véloce.
         objets_crees = [
             classe_cible(**self._filtrer_via_mapping_json(ligne, config_fichier["mapping"]))
             for ligne in df_participants.to_dict("records")
@@ -211,10 +198,6 @@ class DataLoader:
         df_final["id_technique"] = [obj.id for obj in objets_crees]
 
         setattr(self, nom_base, df_final)
-
-    # =========================================================================
-    # CONSTRUCTION DES MATCHS ET RÈGLES DE VICTOIRE
-    # =========================================================================
 
     def _charger_matchs(self, config_match: dict, competition_parente: Competition) -> None:
         """
@@ -372,10 +355,6 @@ class DataLoader:
             return est_gagnant, False
 
         return config_role.get("victoire_forcee") is True, False
-
-    # =========================================================================
-    # OUTILS ET OPTIMISATIONS MÉMOIRE
-    # =========================================================================
 
     def _convertir_en_nombre(self, valeur: Any) -> float:
         """Nettoie et convertit les statistiques en nombres flottants de manière sécurisée."""

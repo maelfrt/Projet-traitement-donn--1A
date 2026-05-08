@@ -41,9 +41,8 @@ class AppController:
         """
         Normalise et valide une saisie de date pour le système.
 
-        Cette méthode utilitaire permet de transformer une chaîne de caractères
-        souvent mal formatée en un objet date robuste, tout en gérant
-        automatiquement le fuseau horaire UTC.
+        Cette méthode permet de transformer une chaîne de caractères
+        souvent mal formatée en un objet date, tout en gérant le fuseau horaire UTC.
 
         Parameters
         ----------
@@ -356,7 +355,6 @@ class AppController:
                         valeur_num = float(val)
                         somme_stats[cle] = somme_stats.get(cle, 0.0) + valeur_num
                     except (ValueError, TypeError):
-                        # On ignore silencieusement les données non calculables (ex: 'N/A')
                         pass
 
         if compteur_matchs == 0:
@@ -469,7 +467,7 @@ class AppController:
             )
             nouveau_match.ajouter_performance(data["role"], perf)
 
-        # Rangement dans l'arborescence et mise à jour immédiate du classement
+        # Rangement dans l'arborescence et mise à jour du classement
         tournoi_cible = self.competition_actuelle
         if nom_sous_comp:
             tournoi_cible = self.competition_actuelle.obtenir_ou_creer_sous_comp(nom_sous_comp)
@@ -483,9 +481,8 @@ class AppController:
         """
         Analyse les données existantes pour déduire le formulaire de saisie idéal.
 
-        Cette méthode est cruciale pour la flexibilité du programme : elle
-        permet au menu de savoir quelles statistiques demander sans avoir
-        à coder les règles de chaque sport en dur.
+        Cette méthode permet au menu de savoir quelles statistiques demander
+        sans avoir à coder les règles de chaque sport en dur.
         """
         if not self.competition_actuelle:
             return {}
@@ -552,7 +549,7 @@ class AppController:
         return True
 
     def _trouver_match_et_parent(self, id_match: str) -> tuple[Match | None, Competition | None]:
-        """Fouille l'arborescence pour localiser l'objet match et son groupe parent."""
+        """Recherche un match et son groupe parent par ID."""
         if not self.competition_actuelle:
             return None, None
 

@@ -34,7 +34,6 @@ class Performance:
         self.est_gagnant = est_gagnant
         self.est_nul = est_nul
 
-        # On s'assure que stats est toujours un dictionnaire pour éviter les erreurs de type
         self.stats = stats if stats is not None else {}
 
         # Cette liste est utilisée pour les sports d'équipe (ex: Football, LoL).

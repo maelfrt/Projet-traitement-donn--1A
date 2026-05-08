@@ -58,8 +58,6 @@ class SearchEngine:
         resultats_uniques = set()
 
         for participant in self.loader._annuaire_participants.values():
-            # L'utilisation de getattr protège le programme en cas d'objet mal formé
-            # qui ne possèderait pas l'attribut 'nom'
             nom_participant = str(getattr(participant, "nom", ""))
 
             # Le filtrage croisé vérifie à la fois l'identité
@@ -67,7 +65,6 @@ class SearchEngine:
             if isinstance(participant, classe_attendue) and recherche_minuscule in nom_participant.lower():
                 resultats_uniques.add(participant)
 
-        # La fonction sorted convertit naturellement le set en une liste ordonnée
         return sorted(resultats_uniques, key=lambda p: str(getattr(p, "nom", "")))
 
     def chercher_athlete_par_nom(self, recherche: str) -> list:

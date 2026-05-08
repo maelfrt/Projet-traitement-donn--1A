@@ -9,9 +9,8 @@ def calculer_statistiques_globales(competition: Competition, liste_participants:
     """
     Moteur d'agrégation principal pour l'analyse des données de la compétition.
 
-    Compile les métriques démographiques, géographiques et de performance en
+    Compile les informations démographiques, géographiques et de performance en
     déléguant les calculs spécifiques à des sous-fonctions spécialisées.
-    Cette approche garantit un code modulaire et facilement testable.
 
     Parameters
     ----------
@@ -27,9 +26,6 @@ def calculer_statistiques_globales(competition: Competition, liste_participants:
     """
     tous_les_matchs = competition.obtenir_tous_les_matchs()
 
-    # Initialisation de la structure avec les comptages de base via des générateurs.
-    # L'utilisation de sum() avec une expression génératrice évite de créer
-    # des listes intermédiaires inutiles en mémoire.
     stats: dict[str, Any] = {
         "total_athletes": sum(1 for e in liste_participants if isinstance(e, Athlete)),
         "total_equipes": sum(1 for e in liste_participants if isinstance(e, Equipe)),
@@ -66,9 +62,6 @@ def _analyser_demographie_age(liste_participants: list[Any]) -> dict[str, Any]:
     if not athletes_valides:
         return {}
 
-    # Extraction des extrêmes à l'aide des fonctions natives Python.
-    # Le cast en int() combiné à l'opérateur "or" garantit la stabilité
-    # du comparateur pour Mypy au cas où un résidu None passerait le filtre.
     plus_jeune = min(athletes_valides, key=lambda x: int(x.age() or 999))
     plus_age = max(athletes_valides, key=lambda x: int(x.age() or 0))
 
@@ -82,8 +75,8 @@ def _analyser_performances_et_provenances(tous_les_matchs: list[Any], liste_part
     """
     Agrège les résultats des matchs et la géographie en un seul passage algorithmique.
 
-    Cette fonction optimise le calcul en balayant la liste des rencontres
-    une seule fois (complexité O(N)). Elle utilise des dictionnaires
+    Cette fonction optimise le calcul en parcourant la liste des rencontres
+    une seule fois. Elle utilise des dictionnaires
     pour compter les victoires par individu et par nation.
 
     Parameters
@@ -103,8 +96,6 @@ def _analyser_performances_et_provenances(tous_les_matchs: list[Any], liste_part
     bilan_prov: dict[str, dict[str, int]] = {}
     repartition_prov: dict[str, int] = {}
 
-    # Création d'un ensemble (set) de mots-clés désignant une information manquante.
-    # La recherche dans un set est instantanée par rapport à une liste.
     valeurs_nulles = {"nan", "none", "", "aucun", "inconnu"}
 
     # Construction de la distribution géographique initiale basée sur les inscrits

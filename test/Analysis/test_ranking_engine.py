@@ -24,9 +24,7 @@ class TestRankingEngine:
         """Vérifie qu'un perdant d'un tour classique reçoit bien sa pénalité décimale."""
         moteur = RankingEngine()
 
-        # La pénalité de +0.9 est une petite astuce mathématique : elle garantit que le perdant
-        # est classé juste derrière tous les gagnants de ce même tour, sans pour autant
-        # se retrouver à égalité avec les éliminés du tour précédent.
+        # +0.9 permet de classer le perdant derrière les vainqueurs du même tour, mais devant les éliminés
         assert moteur._departager_finalistes(nom_du_tour="Round of 16", est_gagnant=False, poids_de_base=4) == 4.9
 
     # Tests sur les différents formats de compétition
@@ -117,7 +115,6 @@ class TestRankingEngine:
         match = Match(id_match="m1")
         match.ajouter_performance("Dom", Performance(eq, "Dom", est_gagnant=True))
 
-        # Le piège classique : on met le match dans la poule, pas à la racine de la compétition
         sous_comp.ajouter_match(match)
 
         moteur.generer_classement(comp_principale)
@@ -125,6 +122,5 @@ class TestRankingEngine:
         # La compétition principale reste logiquement vide car elle n'a pas de matchs directs
         assert comp_principale.classement_final == []
 
-        # Mais l'algorithme a bien fait son travail d'exploration et a classé la sous-compétition
         assert len(sous_comp.classement_final) == 1
         assert sous_comp.classement_final[0]["nom"] == "Team"

@@ -13,8 +13,8 @@ class TestStatistiques:
         resultat = _analyser_demographie_age(liste_participants_statistiques)
 
         assert "plus_jeune" in resultat
-        assert resultat["plus_jeune"]["nom"] == "Jeune Challenger"
-        assert resultat["plus_age"]["nom"] == "Vieux Champion"
+        assert resultat["plus_jeune"]["nom"] == "Jeune joueur"
+        assert resultat["plus_age"]["nom"] == "Vieux joueur"
 
     def test_analyser_demographie_liste_vide(self) -> None:
         # On garde une creation manuelle ici car on veut forcer un cas vide specifique
@@ -27,10 +27,10 @@ class TestStatistiques:
         matchs = competition_statistiques.obtenir_tous_les_matchs()
         resultat = _analyser_performances_et_provenances(matchs, liste_participants_statistiques)
 
-        # Vérification des records (Vieux Champion a joue 3 matchs et a gagne les 3)
-        assert resultat["plus_actif"]["nom"] in ["Vieux Champion", "Jeune Challenger"]
+        # Vérification des records (Vieux joueur a joue 3 matchs et a gagne les 3)
+        assert resultat["plus_actif"]["nom"] in ["Vieux joueur", "Jeune joueur"]
         assert resultat["plus_actif"]["joues"] == 3
-        assert resultat["meilleur_winrate"]["nom"] == "Vieux Champion"
+        assert resultat["meilleur_winrate"]["nom"] == "Vieux joueur"
         assert resultat["meilleur_winrate"]["winrate"] == 100.0
 
         # Vérification des statistiques géographiques (2 Francais contre 1 Espagnol)
@@ -48,7 +48,7 @@ class TestStatistiques:
         assert stats["total_equipes"] == 1
         assert stats["total_matchs"] == 3
         assert "plus_jeune" in stats
-        assert stats["plus_jeune"]["nom"] == "Jeune Challenger"
+        assert stats["plus_jeune"]["nom"] == "Jeune joueur"
 
     def test_calculer_statistiques_globales_vide(self) -> None:
         # Cas limite lorsqu'il n'y a aucune donnée

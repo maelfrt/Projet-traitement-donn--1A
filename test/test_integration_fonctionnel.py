@@ -8,8 +8,6 @@ from src.Model.competition import Competition
 
 
 class TestIntegrationEtFonctionnel:
-    # Scenarios complets de bout en bout
-
     @patch("src.Core.app_controller.time_module.time", side_effect=range(1000, 2000))
     def test_simulation_complete_championnat(self, mock_time: Any) -> None:
         """Verifie le cycle de vie complet d un tournoi de l inscription au palmares final"""
@@ -83,12 +81,10 @@ class TestIntegrationEtFonctionnel:
         ]
         controller.enregistrer_nouveau_match("2024-06-01", perf_finale)
 
-        # Etape 1 Recherche textuelle simulant l action utilisateur
         resultats_recherche = controller.rechercher_participants_par_nom("fede")
         assert len(resultats_recherche) == 1
         cible = resultats_recherche[0]
 
-        # Etape 2 Generation du bilan a partir du resultat de la recherche
         stats, historique = controller.calculer_bilan_historique(cible)
 
         assert stats["total"] == 1
@@ -106,7 +102,6 @@ class TestIntegrationEtFonctionnel:
         j1 = controller.inscrire_participant("1", "Carlsen", "NOR")
         j2 = controller.inscrire_participant("1", "Firouzja", "FRA")
 
-        # Conversion du typage pour eviter les erreurs union attr de MyPy
         assert isinstance(j1, Athlete)
         assert isinstance(j2, Athlete)
 

@@ -80,18 +80,15 @@ class TestSearchEngine:
 
     def test_tri_alphabetique_et_gestion_doublons(self) -> None:
         """Vérifie que l'utilisation d'un 'set' fonctionne pour éliminer les doublons et que la liste est triée."""
-        # Zizou et Titi
         a1 = Athlete(nom="Zidane", id_personne="1")
         a2 = Athlete(nom="Henry", id_personne="2")
 
-        # On simule un bug en mémoire : Zidane a été chargé deux fois sous deux clés différentes
+        # Test du dédoublonnage
         loader = AnnuaireSimule({"cle1": a1, "cle2": a1, "cle3": a2})
         moteur = SearchEngine(loader)
 
-        # Une recherche avec un texte vide ("") va ramener absolument tout ce qu'il y a en mémoire
         resultats = moteur.chercher_athlete_par_nom("")
 
-        # Le 'set' (ensemble) du SearchEngine doit avoir fusionné les deux "Zidane" identiques
         assert len(resultats) == 2
 
         # Le tri final doit forcer l'ordre alphabétique : H avant Z

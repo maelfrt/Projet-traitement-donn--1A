@@ -219,7 +219,6 @@ class TestDataLoader:
         """Verifie l'extraction correcte d'un match avec toutes ses statistiques."""
         loader = DataLoader()
 
-        # On peuple le cache NATIVEMENT avec de vrais objets (pas de Mocks capricieux)
         joueur_a = Athlete(nom="Alpha", id_personne="ID_A")
         joueur_b = Athlete(nom="Beta", id_personne="ID_B")
         loader._annuaire_participants = {"id_a": joueur_a, "id_b": joueur_b}

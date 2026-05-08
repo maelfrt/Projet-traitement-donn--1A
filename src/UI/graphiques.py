@@ -129,7 +129,6 @@ def generer_distribution_matchs(competition) -> None:
         donnees, bins=custom_bins, color="#4682B4", alpha=0.7, edgecolor="white", linewidth=1
     )
 
-    # AFFICHAGE DES VALEURS AU-DESSUS DES BARRES
     for count, patch in zip(n_counts, patches):  # type: ignore
         if count > 0:
             x_center = patch.get_x() + patch.get_width() / 2
@@ -152,7 +151,7 @@ def generer_distribution_matchs(competition) -> None:
     else:
         plt.xticks(fontsize=9)
 
-    ax.set_title(f"Répartition de l'activité ({nb_participants} participants)", fontsize=14, fontweight="bold", pad=20)
+    ax.set_title(f"Distribution des matchs ({nb_participants} participants)", fontsize=14, fontweight="bold", pad=20)
 
     ax.set_xlabel("Nombre de matchs disputés (par intervalles)", fontsize=11)
     ax.set_ylabel("Nombre de participants", fontsize=11)

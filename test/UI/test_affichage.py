@@ -7,7 +7,6 @@ class TestAffichage:
         """Verifie que la banniere principale s affiche correctement a l ecran"""
         afficher_en_tete()
 
-        # capsys prend une photo de tout ce qui a ete affiche dans la console
         capture = capsys.readouterr()
 
         assert "APPLICATION DE TRAITEMENT" in capture.out
@@ -19,7 +18,7 @@ class TestAffichage:
         capture = capsys.readouterr()
 
         assert "AIDE, INFORMATIONS ET CRÉDITS" in capture.out
-        # On verifie qu un membre de l equipe est bien credite
+        # On verifie qu un membre de l'equipe est bien crédité
         assert "Kilian Crumbach" in capture.out
 
     def test_afficher_profil_athlete(self, capsys, athlete_standard: Athlete) -> None:
@@ -36,9 +35,9 @@ class TestAffichage:
         assert "FICHE PROFIL : JEAN DUPONT" in capture.out
         assert "Joueur" in capture.out
 
-        # Verification de l affichage du palmares
+        # Verification de l'affichage du palmares
         assert "Champion Olympique 2024" in capture.out
 
-        # Verification de l affichage des moyennes
+        # Verification de l'affichage des moyennes
         assert "Buts" in capture.out
         assert "2.5" in capture.out

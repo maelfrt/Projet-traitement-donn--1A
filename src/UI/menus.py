@@ -168,8 +168,8 @@ def executer_action_menu(choix: str, controller: AppController, role: str) -> bo
     """
     Appelle la fonctionnalité correspondante au choix du menu principal.
 
-    C'est ici que l'articulation se fait : la fonction récupère les données via le
-    contrôleur et les envoie aux différents sous-menus pour traitement.
+    La fonction récupère les données via le contrôleur et les envoie aux
+    différents sous-menus pour traitement.
 
     Parameters
     ----------
@@ -281,7 +281,6 @@ def menu_recherche_profil(controller: AppController) -> None:
 
         # Validation de la saisie (vérification qu'il s'agit d'un nombre dans les bornes)
         if choix_numero.isdigit() and 1 <= int(choix_numero) <= len(resultats_recherche):
-            # Extraction de l'objet ciblé (en ajustant l'index pour la base 0 des listes Python)
             participant_selectionne = resultats_recherche[int(choix_numero) - 1]
 
             # Le contrôleur compile les performances et le palmarès sur l'ensemble de la carrière
@@ -348,7 +347,6 @@ def menu_competition(competition: Competition, controller: AppController) -> Non
         for i, nom in enumerate(noms_phases, 1):
             print(f"{i}. {nom}")
 
-        # Vérification intelligente : on n'affiche le Tableau Principal QUE s'il possède des matchs
         index_principal = len(noms_phases) + 1
         afficher_tableau_principal = len(competition.liste_match) > 0
 
@@ -560,7 +558,7 @@ def menu_graphiques(competition: Competition, controller: AppController) -> None
 
     Ce menu est dynamique : il s'adapte automatiquement à la complexité du sport
     qui a été chargé en mémoire. Il analyse les statistiques disponibles et bloque
-    les graphiques trop complexes s'il n'y a pas assez de matière à tracer.
+    les graphiques trop compliqués s'il n'y a pas assez de statistiques à tracer.
 
     Parameters
     ----------
@@ -612,19 +610,16 @@ def menu_graphiques(competition: Competition, controller: AppController) -> None
 
         choix_utilisateur = demander_saisie("\nChoix : ")
 
-        # EXÉCUTION DES GRAPHIQUES SIMPLES
         if choix_utilisateur == "1":
             generer_distribution_matchs(competition)
 
         elif choix_utilisateur == "2":
             generer_top_5_winrate(competition)
 
-        # SÉCURITÉ : VERROUILLAGE DES GRAPHIQUES COMPLEXES
         elif choix_utilisateur in ["3", "4"] and nb_stats_disponibles < 4:
             print(f"\n❌ Action impossible : ce sport ne possède que {nb_stats_disponibles} statistiques différentes.")
             print("Il en faut un minimum de 4 pour pouvoir générer ce type de graphique.")
 
-        # EXÉCUTION DES GRAPHIQUES COMPLEXES
         elif choix_utilisateur == "3":
             print("\n--- CHOISISSEZ DEUX STATISTIQUES À COMPARER ---")
             for i, nom_stat in enumerate(liste_des_statistiques, 1):
@@ -829,7 +824,6 @@ def _admin_saisir_resultat(controller: AppController) -> None:
             while True:
                 valeur_saisie = demander_saisie(f"Valeur pour '{nom_stat}' : ")
 
-                # Vérification du typage pour éviter les plantages futurs lors des calculs
                 if type_attendu == "nombre":
                     try:
                         statistiques_saisies[nom_stat] = (
@@ -855,7 +849,6 @@ def _admin_saisir_resultat(controller: AppController) -> None:
             {"participant": participant_trouve, "role": role, "est_gagnant": est_gagnant, "stats": statistiques_saisies}
         )
 
-    # Validation globale et transmission des données au cerveau de l'application
     if liste_performances and len(liste_performances) == len(formulaire_attendu):
         nouvel_id = controller.enregistrer_nouveau_match(date_valide, liste_performances, nom_groupe)
         print(f"\n✅ Match '{nouvel_id}' enregistré ! Les classements ont été recalculés.")
@@ -906,9 +899,7 @@ def _admin_gerer_match(controller: AppController) -> None:
     """
     Gère la recherche, la modification et la suppression d'un match existant.
 
-    Au lieu de demander un identifiant technique complexe, l'interface propose
-    de rechercher un participant, affiche son historique récent, et permet
-    de sélectionner le match visuellemment avant d'appliquer les changements.
+    Interface de gestion (modification/suppression) d'un match existant.
 
     Parameters
     ----------

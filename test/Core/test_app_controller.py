@@ -106,7 +106,7 @@ class TestAppController:
 
         recherche = controller_prepare.rechercher_participants_par_nom("Vieux")
         assert len(recherche) == 1
-        assert recherche[0].nom == "Vieux Champion"
+        assert recherche[0].nom == "Vieux joueur"
 
     def test_inscrire_participant(self, controller_prepare: AppController) -> None:
         """Vérifie l'instanciation d'un nouveau participant et son ajout dans l'annuaire mémoire."""

@@ -45,7 +45,7 @@ def performance_gagnante(athlete_standard: Athlete) -> Performance:
 
 @pytest.fixture
 def competition_championnat() -> Competition:
-    """Fournit une coquille de tournoi pour tester le moteur de classement sans charger de CSV."""
+    """Fixture d'une compétition de type championnat."""
     return Competition(id_competition="C01", nom="Ligue 1", type_format="championnat")
 
 
@@ -53,8 +53,8 @@ def competition_championnat() -> Competition:
 def liste_participants_statistiques() -> list:
     """Fournit un échantillon diversifié pour les tests démographiques et géographiques."""
     return [
-        Athlete(nom="Vieux Champion", id_personne="A1", provenance="France", date_naissance="1980-01-01"),
-        Athlete(nom="Jeune Challenger", id_personne="A2", provenance="Espagne", date_naissance="2005-01-01"),
+        Athlete(nom="Vieux joueur", id_personne="A1", provenance="France", date_naissance="1980-01-01"),
+        Athlete(nom="Jeune joueur", id_personne="A2", provenance="Espagne", date_naissance="2005-01-01"),
         Athlete(nom="Novice", id_personne="A3", provenance="France", date_naissance="1995-01-01"),
         Equipe(nom="Equipe Ignoree", id_equipe="E1"),
     ]
@@ -65,8 +65,8 @@ def competition_statistiques(liste_participants_statistiques: list) -> Competiti
     """Fournit un tournoi complet avec 3 matchs pour valider les calculs complexes (ex: winrate)."""
     comp = Competition(id_competition="C_STAT", nom="Tournoi Stats")
 
-    a1 = liste_participants_statistiques[0]  # Vieux Champion (France)
-    a2 = liste_participants_statistiques[1]  # Jeune Challenger (Espagne)
+    a1 = liste_participants_statistiques[0]  # Vieux joueur (France)
+    a2 = liste_participants_statistiques[1]  # Jeune joueur (Espagne)
 
     for i in range(3):
         m = Match(id_match=f"M{i}")
